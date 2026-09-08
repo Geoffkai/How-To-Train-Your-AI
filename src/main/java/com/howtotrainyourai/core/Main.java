@@ -29,6 +29,8 @@ public class Main {
 
         frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         frame.setMinimumSize(new Dimension(800, 600));
+        frame.setResizable(false);
+        frame.setUndecorated(true);
         frame.setVisible(true);
 
         cardPanel.showScreen(CardPanel.MENU);
