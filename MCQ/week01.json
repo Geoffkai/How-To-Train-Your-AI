@@ -1,0 +1,682 @@
+{
+  "module": "week01",
+  "moduleTitle": "Introduction to Artificial Intelligence",
+  "bloomLevels": [
+    "Knowledge",
+    "Understanding",
+    "Application",
+    "Analysis",
+    "Evaluation",
+    "Synthesis"
+  ],
+  "questions": [
+    {
+      "id": "w01-abesia-knowledge",
+      "bloomLevel": "Knowledge",
+      "question": "Who defined AI as the science of making machines do things that would require intelligence done by men?",
+      "choices": [
+        {
+          "choiceId": "a",
+          "text": "John McCarthy"
+        },
+        {
+          "choiceId": "b",
+          "text": "Marvin Minsky"
+        },
+        {
+          "choiceId": "c",
+          "text": "Allen Newell"
+        },
+        {
+          "choiceId": "d",
+          "text": "Vincent Depaudhon"
+        }
+      ],
+      "correctChoiceId": "b",
+      "explanation": null,
+      "author": "Abesia",
+      "status": null,
+      "date": "2026-08-17"
+    },
+    {
+      "id": "w01-mayores-knowledge",
+      "bloomLevel": "Knowledge",
+      "question": "Which of the following people did NOT provide a definition of Artificial Intelligence?",
+      "choices": [
+        {
+          "choiceId": "a",
+          "text": "Marvin Minsky"
+        },
+        {
+          "choiceId": "b",
+          "text": "Howard Gardner"
+        },
+        {
+          "choiceId": "c",
+          "text": "Allen Newell"
+        },
+        {
+          "choiceId": "d",
+          "text": "Eric Horvitz"
+        }
+      ],
+      "correctChoiceId": "b",
+      "explanation": null,
+      "author": "Mayores",
+      "status": null,
+      "date": "2026-08-17"
+    },
+    {
+      "id": "w01-palanas-knowledge",
+      "bloomLevel": "Knowledge",
+      "question": "Who coined the term Artificial Intelligence?",
+      "choices": [
+        {
+          "choiceId": "a",
+          "text": "Tim-Burners Lee"
+        },
+        {
+          "choiceId": "b",
+          "text": "Theodore Simon"
+        },
+        {
+          "choiceId": "c",
+          "text": "Erving Goffman"
+        },
+        {
+          "choiceId": "d",
+          "text": "John McCarthy"
+        }
+      ],
+      "correctChoiceId": "d",
+      "explanation": null,
+      "author": "Palanas",
+      "status": null,
+      "date": "2026-08-17"
+    },
+    {
+      "id": "w01-tomagan-knowledge",
+      "bloomLevel": "Knowledge",
+      "question": "Where does an AI system's knowledge come from?",
+      "choices": [
+        {
+          "choiceId": "a",
+          "text": "Human knowledge that converted to machine format and the one that AI generates"
+        },
+        {
+          "choiceId": "b",
+          "text": "From the wep applications online and social media posts"
+        },
+        {
+          "choiceId": "c",
+          "text": "From its built-in emotions"
+        },
+        {
+          "choiceId": "d",
+          "text": "From user's browsing history"
+        }
+      ],
+      "correctChoiceId": "a",
+      "explanation": null,
+      "author": "Tomagan",
+      "status": null,
+      "date": "2026-08-17"
+    },
+    {
+      "id": "w01-abesia-understanding",
+      "bloomLevel": "Understanding",
+      "question": "Which statement best explains AI in a modern view according to Horvitz (1990)?",
+      "choices": [
+        {
+          "choiceId": "a",
+          "text": "AI is using computer-based methods for solving challenging tasks traditionally dependent on humans"
+        },
+        {
+          "choiceId": "b",
+          "text": "AI brings all available knowledge to bear problem solving"
+        },
+        {
+          "choiceId": "c",
+          "text": "Both A and B"
+        },
+        {
+          "choiceId": "d",
+          "text": "None of these answers"
+        }
+      ],
+      "correctChoiceId": "a",
+      "explanation": null,
+      "author": "Abesia",
+      "status": null,
+      "date": "2026-08-17"
+    },
+    {
+      "id": "w01-mayores-understanding",
+      "bloomLevel": "Understanding",
+      "question": "Why does the reading classify robotics under AI even though the robot's manipulator arm is purely a mechanical component?",
+      "choices": [
+        {
+          "choiceId": "a",
+          "text": "Because the arm can learn new movements through repetition over time"
+        },
+        {
+          "choiceId": "b",
+          "text": "Because the intelligence sits in how the control unit interprets sensor input and direct's the arm's actions"
+        },
+        {
+          "choiceId": "c",
+          "text": "Because the arm requries a power source, and a power source is what qualifies a system as intelligent"
+        },
+        {
+          "choiceId": "d",
+          "text": "Because the manipulator arm processes natural language commands directly"
+        }
+      ],
+      "correctChoiceId": "b",
+      "explanation": null,
+      "author": "Mayores",
+      "status": null,
+      "date": "2026-08-17"
+    },
+    {
+      "id": "w01-palanas-understanding",
+      "bloomLevel": "Understanding",
+      "question": "Which of the following is a concept of nurture?",
+      "choices": [
+        {
+          "choiceId": "a",
+          "text": "Genetic makeup"
+        },
+        {
+          "choiceId": "b",
+          "text": "Nationality"
+        },
+        {
+          "choiceId": "c",
+          "text": "Upbringing"
+        },
+        {
+          "choiceId": "d",
+          "text": "Born wealth"
+        }
+      ],
+      "correctChoiceId": "c",
+      "explanation": null,
+      "author": "Palanas",
+      "status": null,
+      "date": "2026-08-17"
+    },
+    {
+      "id": "w01-tomagan-understanding",
+      "bloomLevel": "Understanding",
+      "question": "Why is intelligence hard to define?",
+      "choices": [
+        {
+          "choiceId": "a",
+          "text": "Because only IQ tests can define it, and they're expensive"
+        },
+        {
+          "choiceId": "b",
+          "text": "Because definition changes across time, species, culture, and context"
+        },
+        {
+          "choiceId": "c",
+          "text": "Because intelligence doesn't really exist at all"
+        },
+        {
+          "choiceId": "d",
+          "text": "Because scientists have simply been too lazy to agree on one"
+        }
+      ],
+      "correctChoiceId": "b",
+      "explanation": null,
+      "author": "Tomagan",
+      "status": null,
+      "date": "2026-08-17"
+    },
+    {
+      "id": "w01-abesia-application",
+      "bloomLevel": "Application",
+      "question": "When an AI system gathers data from its environment to improve its performance, from which source of knowledge does it derive?",
+      "choices": [
+        {
+          "choiceId": "a",
+          "text": "Human knowledge converted into a suitable format"
+        },
+        {
+          "choiceId": "b",
+          "text": "Knowledge generated by the AI via data gathering"
+        },
+        {
+          "choiceId": "c",
+          "text": "Knowledge generated by AI to support Emotional Intelligence"
+        },
+        {
+          "choiceId": "d",
+          "text": "None of these answers"
+        }
+      ],
+      "correctChoiceId": "b",
+      "explanation": null,
+      "author": "Abesia",
+      "status": null,
+      "date": "2026-08-17"
+    },
+    {
+      "id": "w01-mayores-application",
+      "bloomLevel": "Application",
+      "question": "A system is designed to autonomously navigate a hazardous environment to ensure its own power source is maintained. According to Kevin Warwick's general definition, what is this system primarily exhibiting?",
+      "choices": [
+        {
+          "choiceId": "a",
+          "text": "Nature-only traits"
+        },
+        {
+          "choiceId": "b",
+          "text": "Intelligence for survival"
+        },
+        {
+          "choiceId": "c",
+          "text": "Biological respiration"
+        },
+        {
+          "choiceId": "d",
+          "text": "IQ-based logic"
+        }
+      ],
+      "correctChoiceId": "b",
+      "explanation": null,
+      "author": "Mayores",
+      "status": null,
+      "date": "2026-08-17"
+    },
+    {
+      "id": "w01-palanas-application",
+      "bloomLevel": "Application",
+      "question": "A teacher wants to evaluate the intelligence of their student using a test. What branch of intelligence in Sternberg’s Triarchic Theory of intelligence is the teacher applying?",
+      "choices": [
+        {
+          "choiceId": "a",
+          "text": "Interpersonal"
+        },
+        {
+          "choiceId": "b",
+          "text": "Experimental"
+        },
+        {
+          "choiceId": "c",
+          "text": "Contextual"
+        },
+        {
+          "choiceId": "d",
+          "text": "Componential"
+        }
+      ],
+      "correctChoiceId": "d",
+      "explanation": null,
+      "author": "Palanas",
+      "status": null,
+      "date": "2026-08-17"
+    },
+    {
+      "id": "w01-tomagan-application",
+      "bloomLevel": "Application",
+      "question": "How would you use AI, which is designed to solve problems intelligently, to create an essay about emotions and judgement?",
+      "choices": [
+        {
+          "choiceId": "a",
+          "text": "Prompt everything to AI."
+        },
+        {
+          "choiceId": "b",
+          "text": "Let AI come up with the idea, then you revise it."
+        },
+        {
+          "choiceId": "c",
+          "text": "Brainstorm your idea with AI and let it handle only the technical part, like grammar."
+        }
+      ],
+      "correctChoiceId": "c",
+      "explanation": null,
+      "author": "Tomagan",
+      "status": null,
+      "date": "2026-08-17"
+    },
+    {
+      "id": "w01-abesia-analysis",
+      "bloomLevel": "Analysis",
+      "question": "Which statement correctly contrasts the differences between humans and computers?",
+      "choices": [
+        {
+          "choiceId": "a",
+          "text": "Humans use discrete binary logic, while computers use continuous fuzzy logic"
+        },
+        {
+          "choiceId": "b",
+          "text": "Humans must be programmed, while computers have the capacity to learn"
+        },
+        {
+          "choiceId": "c",
+          "text": "Humans use electrochemical storage while computers use electrionic/magnetic storage"
+        },
+        {
+          "choiceId": "d",
+          "text": "Humans have unlimited memory while computers are limited"
+        }
+      ],
+      "correctChoiceId": "c",
+      "explanation": null,
+      "author": "Abesia",
+      "status": null,
+      "date": "2026-08-17"
+    },
+    {
+      "id": "w01-mayores-analysis",
+      "bloomLevel": "Analysis",
+      "question": "Why would an expert system like MYCIN struggle with ordinary, everyday situations requiring common sense?",
+      "choices": [
+        {
+          "choiceId": "a",
+          "text": "Because it lacks a power source needed to process real-time sensor data"
+        },
+        {
+          "choiceId": "b",
+          "text": "Because it was designed before natural language processing existed"
+        },
+        {
+          "choiceId": "c",
+          "text": "Because it relies on physical manipulators to interact with real-life ambiguity"
+        },
+        {
+          "choiceId": "d",
+          "text": "Because it's built around a narrow, specific domain of expertise, and can't reason outside that pre-programmed scope the way general common sense needs"
+        }
+      ],
+      "correctChoiceId": "d",
+      "explanation": null,
+      "author": "Mayores",
+      "status": null,
+      "date": "2026-08-17"
+    },
+    {
+      "id": "w01-palanas-analysis",
+      "bloomLevel": "Analysis",
+      "question": "Distinguish between Animal Intelligence and Human Intelligence",
+      "choices": [
+        {
+          "choiceId": "a",
+          "text": "Animal intelligence is only focused on their reasoning and profiting from good experiences, while human intelligence is only about forming patterns"
+        },
+        {
+          "choiceId": "b",
+          "text": "Animal intelligence is a variety of information-processing abilities that enable a being to autonomously pursue survival, while human intelligence is a combination of a human being’s ability to learn, pose problems, and solve problems"
+        },
+        {
+          "choiceId": "c",
+          "text": "Animal intelligence is based on their judgement, common sense, and initiative, while human intelligence only cares for their need for survival"
+        },
+        {
+          "choiceId": "d",
+          "text": "Animals have a lower intelligence level, while humans are more intelligent"
+        }
+      ],
+      "correctChoiceId": "b",
+      "explanation": null,
+      "author": "Palanas",
+      "status": null,
+      "date": "2026-08-17"
+    },
+    {
+      "id": "w01-tomagan-analysis",
+      "bloomLevel": "Analysis",
+      "question": "If IQ tests mainly predict exam performance but not job performance, what does that tell us about what they actually measure?",
+      "choices": [
+        {
+          "choiceId": "a",
+          "text": "They measure job performance"
+        },
+        {
+          "choiceId": "b",
+          "text": "They measure every kind of intelligence equally"
+        },
+        {
+          "choiceId": "c",
+          "text": "They prove IQ and intelligence are exactly the same thing"
+        },
+        {
+          "choiceId": "d",
+          "text": "They measure a narrow, examination type skills, not general intelligence"
+        }
+      ],
+      "correctChoiceId": "d",
+      "explanation": null,
+      "author": "Tomagan",
+      "status": null,
+      "date": "2026-08-17"
+    },
+    {
+      "id": "w01-abesia-evaluation",
+      "bloomLevel": "Evaluation",
+      "question": "A tech company claims that its new chatbot truly understands human language simply because it can rephrase what users type and give realistic replies. Do you think this claim is right?",
+      "choices": [
+        {
+          "choiceId": "a",
+          "text": "Yes, because having the idea that it can reply is already a proof of it"
+        },
+        {
+          "choiceId": "b",
+          "text": "Yes, because conversational responses require biological brain cells"
+        },
+        {
+          "choiceId": "c",
+          "text": "No, because simply repeating and rephrasing text using grammar roles is not genuine understanding"
+        },
+        {
+          "choiceId": "d",
+          "text": "No, because it is not enough"
+        }
+      ],
+      "correctChoiceId": "c",
+      "explanation": null,
+      "author": "Abesia",
+      "status": null,
+      "date": "2026-08-17"
+    },
+    {
+      "id": "w01-mayores-evaluation",
+      "bloomLevel": "Evaluation",
+      "question": "According to the \"Alien View\" discussed in A2, on what grounds might an outside observer evalaute a global communications network as the primary intelligent life form on Earth, rather than humans?",
+      "choices": [
+        {
+          "choiceId": "a",
+          "text": "Humans are biologically limited because they cannot perceive ultraviolet, ultrasonic, or X-ray signals"
+        },
+        {
+          "choiceId": "b",
+          "text": "The network satisfies biological indications of life, while humans appear to be simpler, drone-like beings serving its functions"
+        },
+        {
+          "choiceId": "c",
+          "text": "A pure count of neural-type cells in a networked \"brain\" would prove it is more complex than a 100-billion-neuron human brain."
+        },
+        {
+          "choiceId": "d",
+          "text": "Human intelligence is too subjective and restricted by cultural biases such as preference for rock music"
+        }
+      ],
+      "correctChoiceId": "b",
+      "explanation": null,
+      "author": "Mayores",
+      "status": null,
+      "date": "2026-08-17"
+    },
+    {
+      "id": "w01-palanas-evaluation",
+      "bloomLevel": "Evaluation",
+      "question": "What reasoning best criticizes the Turing Test and its goal to distinguish between a human and a machine?",
+      "choices": [
+        {
+          "choiceId": "a",
+          "text": "The test fails to consider the emotional and creative thinking of humans"
+        },
+        {
+          "choiceId": "b",
+          "text": "Humans were often seen as robots during the experiment"
+        },
+        {
+          "choiceId": "c",
+          "text": "Machine behavior is never able to influence the interrogator into thinking that it is a human"
+        },
+        {
+          "choiceId": "d",
+          "text": "The test was too expensive"
+        }
+      ],
+      "correctChoiceId": "a",
+      "explanation": null,
+      "author": "Palanas",
+      "status": null,
+      "date": "2026-08-17"
+    },
+    {
+      "id": "w01-tomagan-evaluation",
+      "bloomLevel": "Evaluation",
+      "question": "Do you think the Turing Test settles what thinking is and defines real intelligence?",
+      "choices": [
+        {
+          "choiceId": "a",
+          "text": "No, because it only captures behavior, not actual understanding."
+        },
+        {
+          "choiceId": "b",
+          "text": "Yes, because passing the test proves a machine is truly conscious."
+        },
+        {
+          "choiceId": "c",
+          "text": "No, because computers cannot be tested against humans at all."
+        },
+        {
+          "choiceId": "d",
+          "text": "Yes, because it is compared directly to a human."
+        }
+      ],
+      "correctChoiceId": "a",
+      "explanation": null,
+      "author": "Tomagan",
+      "status": null,
+      "date": "2026-08-17"
+    },
+    {
+      "id": "w01-abesia-synthesis",
+      "bloomLevel": "Synthesis",
+      "question": "Choose the option that best synthesizes why AI collapsed in the 1970s.",
+      "choices": [
+        {
+          "choiceId": "a",
+          "text": "Humans made unrealistic claims and did not fulfill their expectations"
+        },
+        {
+          "choiceId": "b",
+          "text": "Humans did not fund it enough"
+        },
+        {
+          "choiceId": "c",
+          "text": "Humans are not interested in AI anymore"
+        },
+        {
+          "choiceId": "d",
+          "text": "Humans focused more on the “landing on the moon” mission"
+        }
+      ],
+      "correctChoiceId": "a",
+      "explanation": null,
+      "author": "Abesia",
+      "status": null,
+      "date": "2026-08-17"
+    },
+    {
+      "id": "w01-mayores-synthesis",
+      "bloomLevel": "Synthesis",
+      "question": "You want an agent that plays chess well against novel opponents and can explain its reasoning afterwards with natural language. Which two AI subfields from the reading are essential to prioritize, and which are comparatively less important for this specific goal?",
+      "choices": [
+        {
+          "choiceId": "a",
+          "text": "Vision Systems and Speech Recognition are essential while Game Playing and NLP are less critical"
+        },
+        {
+          "choiceId": "b",
+          "text": "Game Playing and Vision Systems are essential while NLP and Speech Recognition are less Critical"
+        },
+        {
+          "choiceId": "c",
+          "text": "Expert Systems and Robotics are essential while Game Playing and NLP are less critical"
+        },
+        {
+          "choiceId": "d",
+          "text": "Game Playing and NLP are essential while Vision Systems and Speech Recognition are less critical"
+        }
+      ],
+      "correctChoiceId": "d",
+      "explanation": null,
+      "author": "Mayores",
+      "status": null,
+      "date": "2026-08-17"
+    },
+    {
+      "id": "w01-palanas-synthesis",
+      "bloomLevel": "Synthesis",
+      "question": "We say that human traits lie in their capacity to learn, think, problem-solve, and have common sense. If a computer copies these traits during the Turing test, what is the best way the human can persuade the interrogator to think he is a human?",
+      "choices": [
+        {
+          "choiceId": "a",
+          "text": "Show their analytical and computational skills"
+        },
+        {
+          "choiceId": "b",
+          "text": "Show their deductive reasoning"
+        },
+        {
+          "choiceId": "c",
+          "text": "Show their ability to follow instructions"
+        },
+        {
+          "choiceId": "d",
+          "text": "Show their creativity in art and common sense"
+        }
+      ],
+      "correctChoiceId": "d",
+      "explanation": null,
+      "author": "Palanas",
+      "status": null,
+      "date": "2026-08-17"
+    },
+    {
+      "id": "w01-tomagan-synthesis",
+      "bloomLevel": "Synthesis",
+      "question": "AI moved from a philosophical question of \"can machines think?\" to practical, real-world systems. During the AI winter, AI development slowed down. Based on the synthesis of the topic, what enabled AI's further development?",
+      "choices": [
+        {
+          "choiceId": "a",
+          "text": "By halting all funding until a perfect thinking machine was built."
+        },
+        {
+          "choiceId": "b",
+          "text": "By building AI that solves useful problems, rather than machines that think exactly like humans."
+        },
+        {
+          "choiceId": "c",
+          "text": "By proving philosophically that machines can definitely think like humans."
+        },
+        {
+          "choiceId": "d",
+          "text": "By ignoring computing power improvements and focusing only on theory."
+        }
+      ],
+      "correctChoiceId": "b",
+      "explanation": null,
+      "author": "Tomagan",
+      "status": null,
+      "date": "2026-08-17"
+    }
+  ]
+}
