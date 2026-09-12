@@ -1,0 +1,25 @@
+{
+  "projectRoot": "C:/Users/Geoff/OneDrive_Documents/Dokumen/3rd_1st/CMSC 170/MP",
+  "filePaths": [
+    ".ua/config.json",
+    "CMSC 170 Question Bank - Question Bank.csv",
+    "CONTEXT.md",
+    "How_To_Train_Your_AI_Plan_v2.md",
+    "MCQ/week01.json",
+    "README.md",
+    "src/main/java/com/howtotrainyourai/core/Main.java",
+    "src/main/java/com/howtotrainyourai/engine/GameEngine.java",
+    "src/main/java/com/howtotrainyourai/engine/Protocol.java",
+    "src/main/java/com/howtotrainyourai/engine/QuestionSource.java",
+    "src/main/java/com/howtotrainyourai/engine/SessionResult.java",
+    "src/main/java/com/howtotrainyourai/engine/TurnResult.java",
+    "src/main/java/com/howtotrainyourai/gui/CardPanel.java",
+    "src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java",
+    "src/main/java/com/howtotrainyourai/gui/PlayPanel.java",
+    "src/main/java/com/howtotrainyourai/gui/SettingsPanel.java",
+    "src/main/java/com/howtotrainyourai/gui/TutorialPanel.java",
+    "src/main/java/com/howtotrainyourai/model/Choice.java",
+    "src/main/java/com/howtotrainyourai/model/Question.java"
+  ],
+  "gitCommitHash": "23fbc76791a5ee20ddfddd34e9d36bb9ac878558"
+}

@@ -1,0 +1,24 @@
+{
+  "projectRoot": "C:/Users/Geoff/OneDrive_Documents/Dokumen/3rd_1st/CMSC 170/MP",
+  "files": [
+    {"path": ".ua/config.json", "language": "json", "fileCategory": "config"},
+    {"path": "CMSC 170 Question Bank - Question Bank.csv", "language": "csv", "fileCategory": "data"},
+    {"path": "CONTEXT.md", "language": "markdown", "fileCategory": "docs"},
+    {"path": "How_To_Train_Your_AI_Plan_v2.md", "language": "markdown", "fileCategory": "docs"},
+    {"path": "MCQ/week01.json", "language": "json", "fileCategory": "config"},
+    {"path": "README.md", "language": "markdown", "fileCategory": "docs"},
+    {"path": "src/main/java/com/howtotrainyourai/core/Main.java", "language": "java", "fileCategory": "code"},
+    {"path": "src/main/java/com/howtotrainyourai/engine/GameEngine.java", "language": "java", "fileCategory": "code"},
+    {"path": "src/main/java/com/howtotrainyourai/engine/Protocol.java", "language": "java", "fileCategory": "code"},
+    {"path": "src/main/java/com/howtotrainyourai/engine/QuestionSource.java", "language": "java", "fileCategory": "code"},
+    {"path": "src/main/java/com/howtotrainyourai/engine/SessionResult.java", "language": "java", "fileCategory": "code"},
+    {"path": "src/main/java/com/howtotrainyourai/engine/TurnResult.java", "language": "java", "fileCategory": "code"},
+    {"path": "src/main/java/com/howtotrainyourai/gui/CardPanel.java", "language": "java", "fileCategory": "code"},
+    {"path": "src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java", "language": "java", "fileCategory": "code"},
+    {"path": "src/main/java/com/howtotrainyourai/gui/PlayPanel.java", "language": "java", "fileCategory": "code"},
+    {"path": "src/main/java/com/howtotrainyourai/gui/SettingsPanel.java", "language": "java", "fileCategory": "code"},
+    {"path": "src/main/java/com/howtotrainyourai/gui/TutorialPanel.java", "language": "java", "fileCategory": "code"},
+    {"path": "src/main/java/com/howtotrainyourai/model/Choice.java", "language": "java", "fileCategory": "code"},
+    {"path": "src/main/java/com/howtotrainyourai/model/Question.java", "language": "java", "fileCategory": "code"}
+  ]
+}

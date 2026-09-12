@@ -1,0 +1,30 @@
+{
+  "issues": [],
+  "warnings": [
+    "Node 'document:README.md' has no edges (orphan)",
+    "Node 'config:.ua/config.json' has no edges (orphan)"
+  ],
+  "stats": {
+    "totalNodes": 41,
+    "totalEdges": 70,
+    "totalLayers": 4,
+    "tourSteps": 10,
+    "nodeTypes": {
+      "file": 13,
+      "class": 13,
+      "function": 9,
+      "table": 1,
+      "document": 3,
+      "config": 2
+    },
+    "edgeTypes": {
+      "contains": 22,
+      "exports": 21,
+      "imports": 6,
+      "calls": 11,
+      "documents": 2,
+      "related": 3,
+      "depends_on": 5
+    }
+  }
+}

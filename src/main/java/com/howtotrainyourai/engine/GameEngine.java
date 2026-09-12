@@ -1,6 +1,6 @@
 package com.howtotrainyourai.engine;
 
-import com.howtotrainyourai.model.Question;
+import com.howtotrainyourai.model.*;
 
 /**
  * Runs one game session: tracks the current question, scores answers, and
@@ -28,6 +28,7 @@ public interface GameEngine {
 
     /**
      * Submits an answer to the current question and advances the session.
+     * 
      * @param choiceId the letter ("a".."d") the player chose
      * @return what happened this turn — see TurnResult
      */

@@ -1,0 +1,14 @@
+{
+  "fixedSectionOk": true,
+  "nodesRecovered": 0,
+  "edgesRestored": 0,
+  "crossBatchEdgesAdded": 0,
+  "typesRemapped": 0,
+  "complexityRemapped": 0,
+  "notes": [
+    "Merge report showed no 'Fixed' or 'Could not fix' items; input (41 nodes, 70 edges) equals output (41 nodes, 70 edges), confirming no dedup/drops occurred.",
+    "Cross-checked all 41 nodes and 70 edges in assembled-graph.json against batch-1.json, batch-2.json, and batch-3.json: every node ID already follows the <type>:<filePath>[:<name>] convention, all node types are known (file, class, function, table, document, config), and all complexity values are valid (simple, moderate, complex). No malformed or unrecoverable nodes found.",
+    "importMap lists 6 real import relationships (Main.java -> CardPanel/MainMenuPanel/PlayPanel/SettingsPanel/TutorialPanel, and QuestionSource.java -> Question.java); all 6 already exist as 'imports' edges in the assembled graph, so the merge script's 'Recovered 0 imports edges' is correct and no cross-batch edges needed to be added.",
+    "No dangling edges, no unknown types/complexity values, and no missing-id nodes were present in this batch set -- this was a clean assembly requiring no corrective action."
+  ]
+}

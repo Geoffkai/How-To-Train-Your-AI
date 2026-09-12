@@ -1,0 +1,1298 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "name": "How to Train Your AI",
+    "languages": [
+      "java",
+      "json",
+      "markdown",
+      "csv"
+    ],
+    "frameworks": [],
+    "description": "A Java Swing group course project (CMSC 170): a Who-Wants-to-Be-a-Millionaire-style AI-themed quiz game, currently in early Week 1 of a 5-week build.",
+    "analyzedAt": "2026-09-12T09:25:28.649Z",
+    "gitCommitHash": "23fbc76791a5ee20ddfddd34e9d36bb9ac878558"
+  },
+  "nodes": [
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/core/Main.java",
+      "type": "file",
+      "name": "Main.java",
+      "filePath": "src/main/java/com/howtotrainyourai/core/Main.java",
+      "summary": "Application entry point that bootstraps the Swing GUI, creating the main JFrame and wiring the CardPanel-based navigation between the main menu, play, tutorial, and settings screens.",
+      "tags": [
+        "entry-point",
+        "gui",
+        "swing",
+        "application-bootstrap"
+      ],
+      "complexity": "simple",
+      "languageNotes": "Uses SwingUtilities.invokeLater with a method reference to schedule GUI construction on the Event Dispatch Thread, the standard Swing startup pattern."
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/gui/CardPanel.java",
+      "type": "file",
+      "name": "CardPanel.java",
+      "filePath": "src/main/java/com/howtotrainyourai/gui/CardPanel.java",
+      "summary": "A CardLayout-based container that registers named screens and switches the visible one, acting as the app's screen router between menu, play, settings, and tutorial panels.",
+      "tags": [
+        "navigation",
+        "component",
+        "swing",
+        "card-layout"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java",
+      "type": "file",
+      "name": "MainMenuPanel.java",
+      "filePath": "src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java",
+      "summary": "Main menu screen laid out with GridBagLayout, presenting Play, Settings, Tutorial, and Exit buttons that navigate via the shared CardPanel or terminate the application.",
+      "tags": [
+        "component",
+        "gui",
+        "navigation",
+        "event-handler",
+        "swing"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/gui/PlayPanel.java",
+      "type": "file",
+      "name": "PlayPanel.java",
+      "filePath": "src/main/java/com/howtotrainyourai/gui/PlayPanel.java",
+      "summary": "Play screen panel with a title label and a styled back button that returns to the main menu via the shared CardPanel.",
+      "tags": [
+        "component",
+        "gui",
+        "swing",
+        "screen"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/gui/SettingsPanel.java",
+      "type": "file",
+      "name": "SettingsPanel.java",
+      "filePath": "src/main/java/com/howtotrainyourai/gui/SettingsPanel.java",
+      "summary": "Settings screen panel with a title label and a styled back button that returns to the main menu via the shared CardPanel.",
+      "tags": [
+        "component",
+        "gui",
+        "swing",
+        "screen"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/gui/TutorialPanel.java",
+      "type": "file",
+      "name": "TutorialPanel.java",
+      "filePath": "src/main/java/com/howtotrainyourai/gui/TutorialPanel.java",
+      "summary": "Tutorial screen panel with a title label and a styled back button that returns to the main menu via the shared CardPanel.",
+      "tags": [
+        "component",
+        "gui",
+        "swing",
+        "screen"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/main/java/com/howtotrainyourai/core/Main.java:Main",
+      "type": "class",
+      "name": "Main",
+      "filePath": "src/main/java/com/howtotrainyourai/core/Main.java",
+      "lineRange": [
+        11,
+        38
+      ],
+      "summary": "Holds the JVM entry point and the private GUI bootstrap logic that assembles the JFrame and registers all screen panels.",
+      "tags": [
+        "entry-point",
+        "application-bootstrap",
+        "swing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/main/java/com/howtotrainyourai/gui/CardPanel.java:CardPanel",
+      "type": "class",
+      "name": "CardPanel",
+      "filePath": "src/main/java/com/howtotrainyourai/gui/CardPanel.java",
+      "lineRange": [
+        6,
+        27
+      ],
+      "summary": "JPanel subclass wrapping a CardLayout, exposing named screen constants (MENU, PLAY, SETTINGS, TUTORIAL) plus methods to register and switch screens.",
+      "tags": [
+        "component",
+        "navigation",
+        "card-layout",
+        "swing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java:MainMenuPanel",
+      "type": "class",
+      "name": "MainMenuPanel",
+      "filePath": "src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java",
+      "lineRange": [
+        6,
+        56
+      ],
+      "summary": "JPanel subclass rendering the main menu UI, wiring button click handlers to CardPanel navigation and application exit.",
+      "tags": [
+        "component",
+        "gui",
+        "navigation",
+        "swing"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:src/main/java/com/howtotrainyourai/gui/PlayPanel.java:PlayPanel",
+      "type": "class",
+      "name": "PlayPanel",
+      "filePath": "src/main/java/com/howtotrainyourai/gui/PlayPanel.java",
+      "lineRange": [
+        6,
+        29
+      ],
+      "summary": "JPanel subclass rendering the play screen with a title and a back-to-menu button.",
+      "tags": [
+        "component",
+        "gui",
+        "swing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/main/java/com/howtotrainyourai/gui/SettingsPanel.java:SettingsPanel",
+      "type": "class",
+      "name": "SettingsPanel",
+      "filePath": "src/main/java/com/howtotrainyourai/gui/SettingsPanel.java",
+      "lineRange": [
+        6,
+        29
+      ],
+      "summary": "JPanel subclass rendering the settings screen with a title and a back-to-menu button.",
+      "tags": [
+        "component",
+        "gui",
+        "swing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/main/java/com/howtotrainyourai/gui/TutorialPanel.java:TutorialPanel",
+      "type": "class",
+      "name": "TutorialPanel",
+      "filePath": "src/main/java/com/howtotrainyourai/gui/TutorialPanel.java",
+      "lineRange": [
+        6,
+        29
+      ],
+      "summary": "JPanel subclass rendering the tutorial screen with a title and a back-to-menu button.",
+      "tags": [
+        "component",
+        "gui",
+        "swing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/main/java/com/howtotrainyourai/core/Main.java:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "src/main/java/com/howtotrainyourai/core/Main.java",
+      "lineRange": [
+        13,
+        15
+      ],
+      "summary": "JVM entry point that schedules GUI creation on the Swing event dispatch thread.",
+      "tags": [
+        "entry-point",
+        "swing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/main/java/com/howtotrainyourai/core/Main.java:createAndShowGUI",
+      "type": "function",
+      "name": "createAndShowGUI",
+      "filePath": "src/main/java/com/howtotrainyourai/core/Main.java",
+      "lineRange": [
+        17,
+        37
+      ],
+      "summary": "Builds the main JFrame, instantiates and registers all screen panels with the CardPanel, and configures window sizing, decoration, and visibility.",
+      "tags": [
+        "gui-setup",
+        "swing",
+        "factory"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/main/java/com/howtotrainyourai/gui/CardPanel.java:CardPanel",
+      "type": "function",
+      "name": "CardPanel",
+      "filePath": "src/main/java/com/howtotrainyourai/gui/CardPanel.java",
+      "lineRange": [
+        15,
+        18
+      ],
+      "summary": "Constructor that initializes the CardLayout and applies it as this panel's layout manager.",
+      "tags": [
+        "constructor",
+        "swing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/main/java/com/howtotrainyourai/gui/CardPanel.java:addScreen",
+      "type": "function",
+      "name": "addScreen",
+      "filePath": "src/main/java/com/howtotrainyourai/gui/CardPanel.java",
+      "lineRange": [
+        20,
+        22
+      ],
+      "summary": "Registers a named panel as a screen within the card layout.",
+      "tags": [
+        "navigation",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/main/java/com/howtotrainyourai/gui/CardPanel.java:showScreen",
+      "type": "function",
+      "name": "showScreen",
+      "filePath": "src/main/java/com/howtotrainyourai/gui/CardPanel.java",
+      "lineRange": [
+        24,
+        26
+      ],
+      "summary": "Switches the visible card to the screen registered under the given name.",
+      "tags": [
+        "navigation",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java:MainMenuPanel",
+      "type": "function",
+      "name": "MainMenuPanel",
+      "filePath": "src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java",
+      "lineRange": [
+        8,
+        45
+      ],
+      "summary": "Constructor that builds the main menu layout with a title label and Play/Settings/Tutorial/Exit buttons, wiring each button's click handler to CardPanel navigation or System.exit.",
+      "tags": [
+        "constructor",
+        "gui-setup",
+        "event-handler",
+        "swing"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/main/java/com/howtotrainyourai/gui/PlayPanel.java:PlayPanel",
+      "type": "function",
+      "name": "PlayPanel",
+      "filePath": "src/main/java/com/howtotrainyourai/gui/PlayPanel.java",
+      "lineRange": [
+        8,
+        28
+      ],
+      "summary": "Constructor that builds the play screen layout with a title label and a back button wired to return to the main menu.",
+      "tags": [
+        "constructor",
+        "gui-setup",
+        "event-handler",
+        "swing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/main/java/com/howtotrainyourai/gui/SettingsPanel.java:SettingsPanel",
+      "type": "function",
+      "name": "SettingsPanel",
+      "filePath": "src/main/java/com/howtotrainyourai/gui/SettingsPanel.java",
+      "lineRange": [
+        8,
+        28
+      ],
+      "summary": "Constructor that builds the settings screen layout with a title label and a back button wired to return to the main menu.",
+      "tags": [
+        "constructor",
+        "gui-setup",
+        "event-handler",
+        "swing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/main/java/com/howtotrainyourai/gui/TutorialPanel.java:TutorialPanel",
+      "type": "function",
+      "name": "TutorialPanel",
+      "filePath": "src/main/java/com/howtotrainyourai/gui/TutorialPanel.java",
+      "lineRange": [
+        8,
+        28
+      ],
+      "summary": "Constructor that builds the tutorial screen layout with a title label and a back button wired to return to the main menu.",
+      "tags": [
+        "constructor",
+        "gui-setup",
+        "event-handler",
+        "swing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:CMSC 170 Question Bank - Question Bank.csv:QuestionBank",
+      "type": "table",
+      "name": "Question Bank",
+      "filePath": "CMSC 170 Question Bank - Question Bank.csv",
+      "summary": "Legacy comma-delimited draft question bank (769 rows) with per-member AI-themed multiple-choice questions tagged by Bloom's Taxonomy level (Knowledge/Understanding/Application/Analysis/Evaluation/Synthesis); superseded by the pipe-delimited MCQ/*.csv format decided in CONTEXT.md, with content still to be ported rather than discarded.",
+      "tags": [
+        "question-bank",
+        "csv-data",
+        "legacy-format",
+        "superseded",
+        "ai-quiz-content"
+      ],
+      "complexity": "complex",
+      "languageNotes": "Comma-delimited with quote-escaping for fields containing commas/newlines; columns are Date, Last Name, Bloom Level, Lesson Code, Learning Resource Code, Question, four choices, Correct Choice, Explanation, Status."
+    },
+    {
+      "id": "document:CONTEXT.md",
+      "type": "document",
+      "name": "CONTEXT.md",
+      "filePath": "CONTEXT.md",
+      "summary": "Single source of truth for the 'How to Train Your AI' quiz game project: synthesizes the game proposal, assignment grading requirements, and team execution plan into core mechanics (Bloom-stage progression, protocols, scoring ladders, lifelines, end conditions), the decided pipe-delimited CSV data format, the assignment requirements checklist, and a timeline anchor.",
+      "tags": [
+        "documentation",
+        "specification",
+        "source-of-truth",
+        "game-design",
+        "requirements"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:How_To_Train_Your_AI_Plan_v2.md",
+      "type": "document",
+      "name": "How_To_Train_Your_AI_Plan_v2.md",
+      "filePath": "How_To_Train_Your_AI_Plan_v2.md",
+      "summary": "Team execution plan (v2) laying out the four team roles, the pre-coding CSV format lock and shared-class scaffolding, module ownership for question writing, and a week-by-week (Week 1 through final submission) schedule with integration gates and a project risk table.",
+      "tags": [
+        "documentation",
+        "project-plan",
+        "timeline",
+        "team-roles",
+        "development-process"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "README.md",
+      "summary": "Default VS Code Java project README describing the standard src/lib/bin folder structure and pointing to the JAVA PROJECTS view for dependency management.",
+      "tags": [
+        "documentation",
+        "entry-point",
+        "getting-started",
+        "vscode",
+        "java-project"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:.ua/config.json",
+      "type": "config",
+      "name": "config.json",
+      "filePath": ".ua/config.json",
+      "summary": "Understand-Anything tooling configuration specifying English as the output language for generated summaries and documentation.",
+      "tags": [
+        "configuration",
+        "tooling",
+        "understand-anything"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:MCQ/week01.json",
+      "type": "config",
+      "name": "week01.json",
+      "filePath": "MCQ/week01.json",
+      "summary": "Question bank data for the 'Introduction to Artificial Intelligence' module (week01): multiple-choice questions tagged by Bloom's Taxonomy level, each with four choices, a correct-choice id, explanation, author, and status metadata.",
+      "tags": [
+        "database",
+        "question-bank",
+        "mcq",
+        "bloom-taxonomy",
+        "data-pipeline"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/engine/GameEngine.java",
+      "type": "file",
+      "name": "GameEngine.java",
+      "filePath": "src/main/java/com/howtotrainyourai/engine/GameEngine.java",
+      "summary": "Defines the GameEngine contract for running one quiz session -- starting it, tracking the current question, submitting answers, and ending the session -- serving as the seam the GUI layer builds against ahead of the real GameEngineImpl.",
+      "tags": [
+        "interface",
+        "game-logic",
+        "contract",
+        "facade"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/main/java/com/howtotrainyourai/engine/GameEngine.java:GameEngine",
+      "type": "class",
+      "name": "GameEngine",
+      "filePath": "src/main/java/com/howtotrainyourai/engine/GameEngine.java",
+      "lineRange": [
+        15,
+        42
+      ],
+      "summary": "Interface for a game session: starts a session for a trainer and protocol, exposes the current question, accepts a submitted answer, and produces a final session summary on end.",
+      "tags": [
+        "interface",
+        "game-logic",
+        "contract"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/engine/Protocol.java",
+      "type": "file",
+      "name": "Protocol.java",
+      "filePath": "src/main/java/com/howtotrainyourai/engine/Protocol.java",
+      "summary": "Placeholder enum identifying which restoration protocol (STANDARD or HIGH_RISK) a player selected for a session; deliberately empty-bodied until Week 2 behavior (lifelines, multipliers, timers) is implemented.",
+      "tags": [
+        "enum",
+        "placeholder",
+        "game-logic",
+        "data-model"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/main/java/com/howtotrainyourai/engine/Protocol.java:Protocol",
+      "type": "class",
+      "name": "Protocol",
+      "filePath": "src/main/java/com/howtotrainyourai/engine/Protocol.java",
+      "lineRange": [
+        12,
+        15
+      ],
+      "summary": "Enum of session protocols (STANDARD, HIGH_RISK) used to select difficulty/scoring rules; values only, no behavior implemented yet.",
+      "tags": [
+        "enum",
+        "placeholder",
+        "game-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/engine/QuestionSource.java",
+      "type": "file",
+      "name": "QuestionSource.java",
+      "filePath": "src/main/java/com/howtotrainyourai/engine/QuestionSource.java",
+      "summary": "Defines the QuestionSource contract for producing the 15 questions of one game session, ordered by ascending Bloom stage with pre-shuffled choices, decoupled from the session-tracking concerns handled by GameEngine.",
+      "tags": [
+        "interface",
+        "question-bank",
+        "game-logic",
+        "data-pipeline"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/main/java/com/howtotrainyourai/engine/QuestionSource.java:QuestionSource",
+      "type": "class",
+      "name": "QuestionSource",
+      "filePath": "src/main/java/com/howtotrainyourai/engine/QuestionSource.java",
+      "lineRange": [
+        18,
+        30
+      ],
+      "summary": "Interface with a single buildSession() method that returns exactly 15 Questions ordered by Bloom stage, each with its choices already shuffled for one session.",
+      "tags": [
+        "interface",
+        "question-bank",
+        "game-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/engine/SessionResult.java",
+      "type": "file",
+      "name": "SessionResult.java",
+      "filePath": "src/main/java/com/howtotrainyourai/engine/SessionResult.java",
+      "summary": "Placeholder class representing the summary of a finished session (trainer name, final score, highest capability restored, protocol, and outcome); intentionally empty until Week 4 records logic is built.",
+      "tags": [
+        "placeholder",
+        "data-model",
+        "game-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/main/java/com/howtotrainyourai/engine/SessionResult.java:SessionResult",
+      "type": "class",
+      "name": "SessionResult",
+      "filePath": "src/main/java/com/howtotrainyourai/engine/SessionResult.java",
+      "lineRange": [
+        14,
+        15
+      ],
+      "summary": "Empty stub type reserved for the finished-session summary written to training records; its real fields are Week 4 work.",
+      "tags": [
+        "placeholder",
+        "data-model"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/engine/TurnResult.java",
+      "type": "file",
+      "name": "TurnResult.java",
+      "filePath": "src/main/java/com/howtotrainyourai/engine/TurnResult.java",
+      "summary": "Immutable data object describing the outcome of one submitted answer -- correctness, tokens awarded, running total, capability-unlock status/name, and whether the session ended -- consumed by the GUI to render feedback after each turn.",
+      "tags": [
+        "data-model",
+        "value-object",
+        "game-logic",
+        "immutable"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:src/main/java/com/howtotrainyourai/engine/TurnResult.java:TurnResult",
+      "type": "class",
+      "name": "TurnResult",
+      "filePath": "src/main/java/com/howtotrainyourai/engine/TurnResult.java",
+      "lineRange": [
+        13,
+        80
+      ],
+      "summary": "Immutable value object holding the result of one turn: correctness, tokens awarded this turn and running total, capability-unlock flag/name, and game-over flag, exposed via simple getters with no logic of its own.",
+      "tags": [
+        "value-object",
+        "data-model",
+        "game-logic"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/model/Choice.java",
+      "type": "file",
+      "name": "Choice.java",
+      "filePath": "src/main/java/com/howtotrainyourai/model/Choice.java",
+      "summary": "Represents one answer option for a Question, preserving the original CSV letter (a-d) as a stable identifier independent of the order choices are shuffled for display.",
+      "tags": [
+        "data-model",
+        "value-object",
+        "question-bank"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/main/java/com/howtotrainyourai/model/Choice.java:Choice",
+      "type": "class",
+      "name": "Choice",
+      "filePath": "src/main/java/com/howtotrainyourai/model/Choice.java",
+      "lineRange": [
+        15,
+        36
+      ],
+      "summary": "Immutable pairing of a stable choiceId letter and its display text, used so shuffled on-screen ordering never breaks correctness checks against the original CSV letter.",
+      "tags": [
+        "value-object",
+        "data-model"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/model/Question.java",
+      "type": "file",
+      "name": "Question.java",
+      "filePath": "src/main/java/com/howtotrainyourai/model/Question.java",
+      "summary": "Represents one multiple-choice question loaded from an MCQ data source, holding its module, Bloom level, text, explanation, shuffled choices, and the correct choice id, with an isCorrect() helper to check submitted answers.",
+      "tags": [
+        "data-model",
+        "question-bank",
+        "value-object"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:src/main/java/com/howtotrainyourai/model/Question.java:Question",
+      "type": "class",
+      "name": "Question",
+      "filePath": "src/main/java/com/howtotrainyourai/model/Question.java",
+      "lineRange": [
+        12,
+        85
+      ],
+      "summary": "Immutable question record with id, module, Bloom level, text, explanation, choice list, and correct-choice id; isCorrect(choiceId) checks an answer against the original pre-shuffle letter.",
+      "tags": [
+        "value-object",
+        "data-model",
+        "question-bank"
+      ],
+      "complexity": "moderate"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/core/Main.java",
+      "target": "class:src/main/java/com/howtotrainyourai/core/Main.java:Main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/core/Main.java",
+      "target": "function:src/main/java/com/howtotrainyourai/core/Main.java:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/core/Main.java",
+      "target": "function:src/main/java/com/howtotrainyourai/core/Main.java:createAndShowGUI",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/gui/CardPanel.java",
+      "target": "class:src/main/java/com/howtotrainyourai/gui/CardPanel.java:CardPanel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/gui/CardPanel.java",
+      "target": "function:src/main/java/com/howtotrainyourai/gui/CardPanel.java:CardPanel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/gui/CardPanel.java",
+      "target": "function:src/main/java/com/howtotrainyourai/gui/CardPanel.java:addScreen",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/gui/CardPanel.java",
+      "target": "function:src/main/java/com/howtotrainyourai/gui/CardPanel.java:showScreen",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java",
+      "target": "class:src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java:MainMenuPanel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java",
+      "target": "function:src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java:MainMenuPanel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/gui/PlayPanel.java",
+      "target": "class:src/main/java/com/howtotrainyourai/gui/PlayPanel.java:PlayPanel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/gui/PlayPanel.java",
+      "target": "function:src/main/java/com/howtotrainyourai/gui/PlayPanel.java:PlayPanel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/gui/SettingsPanel.java",
+      "target": "class:src/main/java/com/howtotrainyourai/gui/SettingsPanel.java:SettingsPanel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/gui/SettingsPanel.java",
+      "target": "function:src/main/java/com/howtotrainyourai/gui/SettingsPanel.java:SettingsPanel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/gui/TutorialPanel.java",
+      "target": "class:src/main/java/com/howtotrainyourai/gui/TutorialPanel.java:TutorialPanel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/gui/TutorialPanel.java",
+      "target": "function:src/main/java/com/howtotrainyourai/gui/TutorialPanel.java:TutorialPanel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/core/Main.java",
+      "target": "class:src/main/java/com/howtotrainyourai/core/Main.java:Main",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/core/Main.java",
+      "target": "function:src/main/java/com/howtotrainyourai/core/Main.java:main",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/gui/CardPanel.java",
+      "target": "class:src/main/java/com/howtotrainyourai/gui/CardPanel.java:CardPanel",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/gui/CardPanel.java",
+      "target": "function:src/main/java/com/howtotrainyourai/gui/CardPanel.java:CardPanel",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/gui/CardPanel.java",
+      "target": "function:src/main/java/com/howtotrainyourai/gui/CardPanel.java:addScreen",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/gui/CardPanel.java",
+      "target": "function:src/main/java/com/howtotrainyourai/gui/CardPanel.java:showScreen",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java",
+      "target": "class:src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java:MainMenuPanel",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java",
+      "target": "function:src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java:MainMenuPanel",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/gui/PlayPanel.java",
+      "target": "class:src/main/java/com/howtotrainyourai/gui/PlayPanel.java:PlayPanel",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/gui/PlayPanel.java",
+      "target": "function:src/main/java/com/howtotrainyourai/gui/PlayPanel.java:PlayPanel",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/gui/SettingsPanel.java",
+      "target": "class:src/main/java/com/howtotrainyourai/gui/SettingsPanel.java:SettingsPanel",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/gui/SettingsPanel.java",
+      "target": "function:src/main/java/com/howtotrainyourai/gui/SettingsPanel.java:SettingsPanel",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/gui/TutorialPanel.java",
+      "target": "class:src/main/java/com/howtotrainyourai/gui/TutorialPanel.java:TutorialPanel",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/gui/TutorialPanel.java",
+      "target": "function:src/main/java/com/howtotrainyourai/gui/TutorialPanel.java:TutorialPanel",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/core/Main.java",
+      "target": "file:src/main/java/com/howtotrainyourai/gui/CardPanel.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/core/Main.java",
+      "target": "file:src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/core/Main.java",
+      "target": "file:src/main/java/com/howtotrainyourai/gui/PlayPanel.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/core/Main.java",
+      "target": "file:src/main/java/com/howtotrainyourai/gui/SettingsPanel.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/core/Main.java",
+      "target": "file:src/main/java/com/howtotrainyourai/gui/TutorialPanel.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "function:src/main/java/com/howtotrainyourai/core/Main.java:createAndShowGUI",
+      "target": "function:src/main/java/com/howtotrainyourai/gui/CardPanel.java:CardPanel",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/main/java/com/howtotrainyourai/core/Main.java:createAndShowGUI",
+      "target": "function:src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java:MainMenuPanel",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/main/java/com/howtotrainyourai/core/Main.java:createAndShowGUI",
+      "target": "function:src/main/java/com/howtotrainyourai/gui/PlayPanel.java:PlayPanel",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/main/java/com/howtotrainyourai/core/Main.java:createAndShowGUI",
+      "target": "function:src/main/java/com/howtotrainyourai/gui/TutorialPanel.java:TutorialPanel",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/main/java/com/howtotrainyourai/core/Main.java:createAndShowGUI",
+      "target": "function:src/main/java/com/howtotrainyourai/gui/SettingsPanel.java:SettingsPanel",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/main/java/com/howtotrainyourai/core/Main.java:createAndShowGUI",
+      "target": "function:src/main/java/com/howtotrainyourai/gui/CardPanel.java:addScreen",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/main/java/com/howtotrainyourai/core/Main.java:createAndShowGUI",
+      "target": "function:src/main/java/com/howtotrainyourai/gui/CardPanel.java:showScreen",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java:MainMenuPanel",
+      "target": "function:src/main/java/com/howtotrainyourai/gui/CardPanel.java:showScreen",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/main/java/com/howtotrainyourai/gui/PlayPanel.java:PlayPanel",
+      "target": "function:src/main/java/com/howtotrainyourai/gui/CardPanel.java:showScreen",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/main/java/com/howtotrainyourai/gui/SettingsPanel.java:SettingsPanel",
+      "target": "function:src/main/java/com/howtotrainyourai/gui/CardPanel.java:showScreen",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/main/java/com/howtotrainyourai/gui/TutorialPanel.java:TutorialPanel",
+      "target": "function:src/main/java/com/howtotrainyourai/gui/CardPanel.java:showScreen",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "document:CONTEXT.md",
+      "target": "document:How_To_Train_Your_AI_Plan_v2.md",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CONTEXT.md",
+      "target": "table:CMSC 170 Question Bank - Question Bank.csv:QuestionBank",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:How_To_Train_Your_AI_Plan_v2.md",
+      "target": "table:CMSC 170 Question Bank - Question Bank.csv:QuestionBank",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/engine/GameEngine.java",
+      "target": "class:src/main/java/com/howtotrainyourai/engine/GameEngine.java:GameEngine",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/engine/GameEngine.java",
+      "target": "class:src/main/java/com/howtotrainyourai/engine/GameEngine.java:GameEngine",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/engine/Protocol.java",
+      "target": "class:src/main/java/com/howtotrainyourai/engine/Protocol.java:Protocol",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/engine/Protocol.java",
+      "target": "class:src/main/java/com/howtotrainyourai/engine/Protocol.java:Protocol",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/engine/QuestionSource.java",
+      "target": "class:src/main/java/com/howtotrainyourai/engine/QuestionSource.java:QuestionSource",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/engine/QuestionSource.java",
+      "target": "class:src/main/java/com/howtotrainyourai/engine/QuestionSource.java:QuestionSource",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/engine/SessionResult.java",
+      "target": "class:src/main/java/com/howtotrainyourai/engine/SessionResult.java:SessionResult",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/engine/SessionResult.java",
+      "target": "class:src/main/java/com/howtotrainyourai/engine/SessionResult.java:SessionResult",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/engine/TurnResult.java",
+      "target": "class:src/main/java/com/howtotrainyourai/engine/TurnResult.java:TurnResult",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/engine/TurnResult.java",
+      "target": "class:src/main/java/com/howtotrainyourai/engine/TurnResult.java:TurnResult",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/model/Choice.java",
+      "target": "class:src/main/java/com/howtotrainyourai/model/Choice.java:Choice",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/model/Choice.java",
+      "target": "class:src/main/java/com/howtotrainyourai/model/Choice.java:Choice",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/model/Question.java",
+      "target": "class:src/main/java/com/howtotrainyourai/model/Question.java:Question",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/model/Question.java",
+      "target": "class:src/main/java/com/howtotrainyourai/model/Question.java:Question",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/engine/QuestionSource.java",
+      "target": "file:src/main/java/com/howtotrainyourai/model/Question.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/engine/GameEngine.java",
+      "target": "file:src/main/java/com/howtotrainyourai/engine/Protocol.java",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/engine/GameEngine.java",
+      "target": "file:src/main/java/com/howtotrainyourai/engine/TurnResult.java",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/engine/GameEngine.java",
+      "target": "file:src/main/java/com/howtotrainyourai/engine/SessionResult.java",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/engine/GameEngine.java",
+      "target": "file:src/main/java/com/howtotrainyourai/model/Question.java",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:src/main/java/com/howtotrainyourai/model/Question.java",
+      "target": "file:src/main/java/com/howtotrainyourai/model/Choice.java",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:MCQ/week01.json",
+      "target": "class:src/main/java/com/howtotrainyourai/engine/QuestionSource.java:QuestionSource",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:MCQ/week01.json",
+      "target": "class:src/main/java/com/howtotrainyourai/model/Question.java:Question",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ],
+  "layers": [
+    {
+      "id": "layer:ui",
+      "name": "Presentation Layer",
+      "description": "The Swing GUI: the application entry point that bootstraps the JFrame plus the CardPanel screen router and the menu/play/settings/tutorial panels it navigates between.",
+      "nodeIds": [
+        "file:src/main/java/com/howtotrainyourai/core/Main.java",
+        "file:src/main/java/com/howtotrainyourai/gui/CardPanel.java",
+        "file:src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java",
+        "file:src/main/java/com/howtotrainyourai/gui/PlayPanel.java",
+        "file:src/main/java/com/howtotrainyourai/gui/SettingsPanel.java",
+        "file:src/main/java/com/howtotrainyourai/gui/TutorialPanel.java"
+      ]
+    },
+    {
+      "id": "layer:service",
+      "name": "Game Engine Layer",
+      "description": "The engine package's session contracts and value objects (GameEngine, QuestionSource, Protocol, TurnResult, SessionResult) that will drive quiz-session logic between the GUI and the question data.",
+      "nodeIds": [
+        "file:src/main/java/com/howtotrainyourai/engine/GameEngine.java",
+        "file:src/main/java/com/howtotrainyourai/engine/Protocol.java",
+        "file:src/main/java/com/howtotrainyourai/engine/QuestionSource.java",
+        "file:src/main/java/com/howtotrainyourai/engine/SessionResult.java",
+        "file:src/main/java/com/howtotrainyourai/engine/TurnResult.java"
+      ]
+    },
+    {
+      "id": "layer:data",
+      "name": "Data Layer",
+      "description": "Question and Choice model classes plus the underlying question-bank data files (the legacy CSV draft and the current per-week MCQ JSON) that the engine layer loads sessions from.",
+      "nodeIds": [
+        "file:src/main/java/com/howtotrainyourai/model/Choice.java",
+        "file:src/main/java/com/howtotrainyourai/model/Question.java",
+        "table:CMSC 170 Question Bank - Question Bank.csv:QuestionBank",
+        "config:MCQ/week01.json"
+      ]
+    },
+    {
+      "id": "layer:documentation",
+      "name": "Documentation & Project Configuration",
+      "description": "Project-level markdown documentation (source-of-truth spec, team execution plan, VS Code README) plus the Understand-Anything tooling configuration file.",
+      "nodeIds": [
+        "document:CONTEXT.md",
+        "document:How_To_Train_Your_AI_Plan_v2.md",
+        "document:README.md",
+        "config:.ua/config.json"
+      ]
+    }
+  ],
+  "tour": [
+    {
+      "order": 1,
+      "title": "Project Source of Truth",
+      "description": "CONTEXT.md is the project's actual source of truth, not the generic VS Code README you'll find elsewhere in the repo. It captures the game proposal, the assignment requirements it must satisfy, the team's execution plan, and — critically — the locked decision on the CSV data format used for questions. Start here to understand what this project is (an AI-themed, Who-Wants-to-Be-a-Millionaire-style quiz game) before looking at any code.",
+      "nodeIds": [
+        "document:CONTEXT.md"
+      ]
+    },
+    {
+      "order": 2,
+      "title": "Team Execution Plan",
+      "description": "Building on Step 1, this document explains HOW the team is building the project: four defined roles, a pre-coding agreement to lock the CSV question format before anyone writes loading code, shared-class scaffolding built first so members can work in parallel, and a week-by-week schedule with integration gates. This explains why you'll see interfaces and placeholder classes throughout the codebase instead of finished logic — the project is in Week 1 of 5, and this plan is the reason the scaffolding looks the way it does.",
+      "nodeIds": [
+        "document:How_To_Train_Your_AI_Plan_v2.md"
+      ]
+    },
+    {
+      "order": 3,
+      "title": "Application Entry Point",
+      "description": "Main.java is where the program starts. It bootstraps the Swing GUI and wires up navigation between screens using a CardPanel-based router, importing all five GUI panels (CardPanel, MainMenuPanel, PlayPanel, SettingsPanel, TutorialPanel) directly. As the plan from Step 2 promised, this is shared scaffolding: it exists so every team member has a working app shell to build their piece into.",
+      "nodeIds": [
+        "file:src/main/java/com/howtotrainyourai/core/Main.java"
+      ],
+      "languageLesson": "Java Swing applications conventionally start from a main() method that constructs the top-level JFrame and adds child components before calling setVisible(true) — everything downstream is reachable from this one bootstrap point."
+    },
+    {
+      "order": 4,
+      "title": "The Screen Router",
+      "description": "CardPanel wraps Swing's CardLayout to let the app register named screens and switch which one is visible without destroying and recreating components. Main.java (Step 3) hands every panel to this router, and each panel later calls back into it to navigate elsewhere — for example, MainMenuPanel's Play button will tell CardPanel to show the play screen. This indirection is what lets four different screens be developed independently without needing to know about each other directly.",
+      "nodeIds": [
+        "file:src/main/java/com/howtotrainyourai/gui/CardPanel.java"
+      ],
+      "languageLesson": "CardLayout is a Swing layout manager that stacks components like a deck of cards, showing only one at a time by string key — a lightweight alternative to a full navigation framework, well suited to a small multi-screen desktop app."
+    },
+    {
+      "order": 5,
+      "title": "The Four Screens",
+      "description": "These four panels are the screens registered with CardPanel from Step 4. MainMenuPanel is the most built-out, with working Play/Settings/Tutorial/Exit buttons, while PlayPanel, SettingsPanel, and TutorialPanel are currently placeholders — just a title and a back button. This is deliberate Week 1 scaffolding: the navigation skeleton exists end-to-end so that whoever implements the actual quiz gameplay, settings, or tutorial content later only has to fill in one panel's body, not rebuild the app's screen-switching logic.",
+      "nodeIds": [
+        "file:src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java",
+        "file:src/main/java/com/howtotrainyourai/gui/PlayPanel.java",
+        "file:src/main/java/com/howtotrainyourai/gui/SettingsPanel.java",
+        "file:src/main/java/com/howtotrainyourai/gui/TutorialPanel.java"
+      ]
+    },
+    {
+      "order": 6,
+      "title": "Question and Choice Data Model",
+      "description": "Stepping away from the GUI, Question and Choice are the immutable data classes that represent quiz content. A Question carries an id, module, Bloom's-taxonomy difficulty level, text, explanation, and a list of shuffled Choices plus the id of the correct one, exposing an isCorrect() check. Choice keeps a stable original-letter choiceId separate from its display text specifically so that shuffling the on-screen order never breaks the answer key — a small but important design decision for a game where choice order should be randomized per session.",
+      "nodeIds": [
+        "file:src/main/java/com/howtotrainyourai/model/Question.java",
+        "file:src/main/java/com/howtotrainyourai/model/Choice.java"
+      ],
+      "languageLesson": "Both classes are immutable value objects (fields set once via constructor, no setters) — a common Java pattern for data that's shared across threads or passed freely between GUI and engine code without risk of accidental mutation."
+    },
+    {
+      "order": 7,
+      "title": "The Question Source Contract",
+      "description": "QuestionSource is an interface with a single method, buildSession(), which is contracted to return exactly 15 Questions (Step 6) in ascending Bloom-level order with their choices already shuffled. No implementation exists yet — this interface is a seam the rest of the system can be built against before the real question-loading logic (reading from the CSV/JSON data you'll see next) is written. It's the same pre-coding-agreement approach described in Step 2's plan: agree on the shape first, implement in parallel second.",
+      "nodeIds": [
+        "file:src/main/java/com/howtotrainyourai/engine/QuestionSource.java"
+      ],
+      "languageLesson": "Programming to an interface lets teammates write code against QuestionSource's contract immediately, then swap in a real CSV- or JSON-backed implementation later without changing any calling code — a classic dependency-inversion pattern."
+    },
+    {
+      "order": 8,
+      "title": "Game Engine Session Contracts",
+      "description": "GameEngine is the interface the GUI will eventually call to run a quiz session: startSession, currentQuestion, submitAnswer, and endSession. It depends on three supporting value types — Protocol (a placeholder enum for STANDARD vs. HIGH_RISK session modes), TurnResult (the immutable outcome of one turn: correctness, tokens awarded, capability unlocks, game-over flag), and SessionResult (an empty placeholder reserved for Week 4's finished-session summary). Together with QuestionSource from Step 7, this is the full 'seam' the GUI panels from Step 5 will eventually be wired against once the real engine logic is implemented.",
+      "nodeIds": [
+        "file:src/main/java/com/howtotrainyourai/engine/GameEngine.java",
+        "file:src/main/java/com/howtotrainyourai/engine/Protocol.java",
+        "file:src/main/java/com/howtotrainyourai/engine/TurnResult.java",
+        "file:src/main/java/com/howtotrainyourai/engine/SessionResult.java"
+      ],
+      "languageLesson": "Java enums like Protocol are more than named constants — they can carry fields and methods, making them a good fit for modeling a small closed set of session modes that may later need associated behavior."
+    },
+    {
+      "order": 9,
+      "title": "The Current Question Bank Data",
+      "description": "week01.json is the actual data QuestionSource (Step 7) and Question (Step 6) will eventually be built to load — the 'Introduction to Artificial Intelligence' module's question bank in the current, agreed-upon format. This is the concrete payload behind the abstract interfaces you just saw: once someone implements QuestionSource, this file (and others like it per week) is what buildSession() will read from disk.",
+      "nodeIds": [
+        "config:MCQ/week01.json"
+      ]
+    },
+    {
+      "order": 10,
+      "title": "The Superseded Legacy Format",
+      "description": "This CSV file is the team's original, comma-delimited draft question bank — documented in both CONTEXT.md and the execution plan from Steps 1-2 as the format that was superseded by the pipe-delimited MCQ/*.csv (and now JSON, as seen in Step 9) format. It's kept in the repo as a record of the format-lock decision: comparing this legacy draft to week01.json shows concretely why the team paused to agree on a data format before writing any loading code, avoiding rework once multiple people started producing question content in parallel.",
+      "nodeIds": [
+        "table:CMSC 170 Question Bank - Question Bank.csv:QuestionBank"
+      ],
+      "languageLesson": "CSV format choices matter early: a comma delimiter breaks on any answer text that itself contains a comma, which is likely why the team's locked format switched to a pipe delimiter — a small decision with outsized downstream effects on parser robustness."
+    }
+  ]
+}

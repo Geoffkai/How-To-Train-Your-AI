@@ -1,0 +1,15 @@
+{
+  "projectRoot": "C:/Users/Geoff/OneDrive_Documents/Dokumen/3rd_1st/CMSC 170/MP",
+  "batchFiles": [
+    {"path": "CMSC 170 Question Bank - Question Bank.csv", "language": "csv", "sizeLines": 769, "fileCategory": "data"},
+    {"path": "CONTEXT.md", "language": "markdown", "sizeLines": 182, "fileCategory": "docs"},
+    {"path": "How_To_Train_Your_AI_Plan_v2.md", "language": "markdown", "sizeLines": 240, "fileCategory": "docs"},
+    {"path": "README.md", "language": "markdown", "sizeLines": 18, "fileCategory": "docs"}
+  ],
+  "batchImportData": {
+    "CMSC 170 Question Bank - Question Bank.csv": [],
+    "CONTEXT.md": [],
+    "How_To_Train_Your_AI_Plan_v2.md": [],
+    "README.md": []
+  }
+}

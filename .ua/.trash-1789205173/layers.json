@@ -1,0 +1,49 @@
+[
+  {
+    "id": "layer:ui",
+    "name": "Presentation Layer",
+    "description": "The Swing GUI: the application entry point that bootstraps the JFrame plus the CardPanel screen router and the menu/play/settings/tutorial panels it navigates between.",
+    "nodeIds": [
+      "file:src/main/java/com/howtotrainyourai/core/Main.java",
+      "file:src/main/java/com/howtotrainyourai/gui/CardPanel.java",
+      "file:src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java",
+      "file:src/main/java/com/howtotrainyourai/gui/PlayPanel.java",
+      "file:src/main/java/com/howtotrainyourai/gui/SettingsPanel.java",
+      "file:src/main/java/com/howtotrainyourai/gui/TutorialPanel.java"
+    ]
+  },
+  {
+    "id": "layer:service",
+    "name": "Game Engine Layer",
+    "description": "The engine package's session contracts and value objects (GameEngine, QuestionSource, Protocol, TurnResult, SessionResult) that will drive quiz-session logic between the GUI and the question data.",
+    "nodeIds": [
+      "file:src/main/java/com/howtotrainyourai/engine/GameEngine.java",
+      "file:src/main/java/com/howtotrainyourai/engine/Protocol.java",
+      "file:src/main/java/com/howtotrainyourai/engine/QuestionSource.java",
+      "file:src/main/java/com/howtotrainyourai/engine/SessionResult.java",
+      "file:src/main/java/com/howtotrainyourai/engine/TurnResult.java"
+    ]
+  },
+  {
+    "id": "layer:data",
+    "name": "Data Layer",
+    "description": "Question and Choice model classes plus the underlying question-bank data files (the legacy CSV draft and the current per-week MCQ JSON) that the engine layer loads sessions from.",
+    "nodeIds": [
+      "file:src/main/java/com/howtotrainyourai/model/Choice.java",
+      "file:src/main/java/com/howtotrainyourai/model/Question.java",
+      "table:CMSC 170 Question Bank - Question Bank.csv:QuestionBank",
+      "config:MCQ/week01.json"
+    ]
+  },
+  {
+    "id": "layer:documentation",
+    "name": "Documentation & Project Configuration",
+    "description": "Project-level markdown documentation (source-of-truth spec, team execution plan, VS Code README) plus the Understand-Anything tooling configuration file.",
+    "nodeIds": [
+      "document:CONTEXT.md",
+      "document:How_To_Train_Your_AI_Plan_v2.md",
+      "document:README.md",
+      "config:.ua/config.json"
+    ]
+  }
+]

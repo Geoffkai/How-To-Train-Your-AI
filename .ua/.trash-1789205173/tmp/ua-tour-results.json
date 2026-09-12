@@ -1,0 +1,430 @@
+{
+  "scriptCompleted": true,
+  "entryPointCandidates": [
+    {
+      "id": "document:README.md",
+      "score": 5,
+      "name": "README.md",
+      "summary": "Default VS Code Java project README describing src/lib/bin folder structure."
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/core/Main.java",
+      "score": 5,
+      "name": "Main.java",
+      "summary": "Application entry point that bootstraps the Swing GUI and wires CardPanel-based navigation between screens."
+    },
+    {
+      "id": "document:CONTEXT.md",
+      "score": 2,
+      "name": "CONTEXT.md",
+      "summary": "Single source of truth for the project: game proposal, assignment requirements, team execution plan, and the locked CSV data format decision."
+    },
+    {
+      "id": "document:How_To_Train_Your_AI_Plan_v2.md",
+      "score": 2,
+      "name": "How_To_Train_Your_AI_Plan_v2.md",
+      "summary": "Team execution plan: four roles, pre-coding CSV format lock, shared-class scaffolding, week-by-week schedule with integration gates."
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/engine/GameEngine.java",
+      "score": 2,
+      "name": "GameEngine.java",
+      "summary": "Interface: startSession/currentQuestion/submitAnswer/endSession — the seam the GUI builds against ahead of the real implementation."
+    }
+  ],
+  "fanInRanking": [
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/model/Question.java",
+      "fanIn": 3,
+      "name": "Question.java"
+    },
+    {
+      "id": "table:CMSC 170 Question Bank - Question Bank.csv:QuestionBank",
+      "fanIn": 2,
+      "name": "Question Bank"
+    },
+    {
+      "id": "document:How_To_Train_Your_AI_Plan_v2.md",
+      "fanIn": 1,
+      "name": "How_To_Train_Your_AI_Plan_v2.md"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/gui/CardPanel.java",
+      "fanIn": 1,
+      "name": "CardPanel.java"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java",
+      "fanIn": 1,
+      "name": "MainMenuPanel.java"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/gui/PlayPanel.java",
+      "fanIn": 1,
+      "name": "PlayPanel.java"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/gui/SettingsPanel.java",
+      "fanIn": 1,
+      "name": "SettingsPanel.java"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/gui/TutorialPanel.java",
+      "fanIn": 1,
+      "name": "TutorialPanel.java"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/model/Choice.java",
+      "fanIn": 1,
+      "name": "Choice.java"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/engine/QuestionSource.java",
+      "fanIn": 1,
+      "name": "QuestionSource.java"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/engine/TurnResult.java",
+      "fanIn": 1,
+      "name": "TurnResult.java"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/engine/Protocol.java",
+      "fanIn": 1,
+      "name": "Protocol.java"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/engine/SessionResult.java",
+      "fanIn": 1,
+      "name": "SessionResult.java"
+    },
+    {
+      "id": "document:CONTEXT.md",
+      "fanIn": 0,
+      "name": "CONTEXT.md"
+    },
+    {
+      "id": "document:README.md",
+      "fanIn": 0,
+      "name": "README.md"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/core/Main.java",
+      "fanIn": 0,
+      "name": "Main.java"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/engine/GameEngine.java",
+      "fanIn": 0,
+      "name": "GameEngine.java"
+    },
+    {
+      "id": "config:MCQ/week01.json",
+      "fanIn": 0,
+      "name": "week01.json"
+    },
+    {
+      "id": "config:.ua/config.json",
+      "fanIn": 0,
+      "name": "config.json"
+    }
+  ],
+  "fanOutRanking": [
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/core/Main.java",
+      "fanOut": 5,
+      "name": "Main.java"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/engine/GameEngine.java",
+      "fanOut": 4,
+      "name": "GameEngine.java"
+    },
+    {
+      "id": "document:CONTEXT.md",
+      "fanOut": 2,
+      "name": "CONTEXT.md"
+    },
+    {
+      "id": "config:MCQ/week01.json",
+      "fanOut": 2,
+      "name": "week01.json"
+    },
+    {
+      "id": "document:How_To_Train_Your_AI_Plan_v2.md",
+      "fanOut": 1,
+      "name": "How_To_Train_Your_AI_Plan_v2.md"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/model/Question.java",
+      "fanOut": 1,
+      "name": "Question.java"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/engine/QuestionSource.java",
+      "fanOut": 1,
+      "name": "QuestionSource.java"
+    },
+    {
+      "id": "document:README.md",
+      "fanOut": 0,
+      "name": "README.md"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/gui/CardPanel.java",
+      "fanOut": 0,
+      "name": "CardPanel.java"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java",
+      "fanOut": 0,
+      "name": "MainMenuPanel.java"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/gui/PlayPanel.java",
+      "fanOut": 0,
+      "name": "PlayPanel.java"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/gui/SettingsPanel.java",
+      "fanOut": 0,
+      "name": "SettingsPanel.java"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/gui/TutorialPanel.java",
+      "fanOut": 0,
+      "name": "TutorialPanel.java"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/model/Choice.java",
+      "fanOut": 0,
+      "name": "Choice.java"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/engine/TurnResult.java",
+      "fanOut": 0,
+      "name": "TurnResult.java"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/engine/Protocol.java",
+      "fanOut": 0,
+      "name": "Protocol.java"
+    },
+    {
+      "id": "file:src/main/java/com/howtotrainyourai/engine/SessionResult.java",
+      "fanOut": 0,
+      "name": "SessionResult.java"
+    },
+    {
+      "id": "table:CMSC 170 Question Bank - Question Bank.csv:QuestionBank",
+      "fanOut": 0,
+      "name": "Question Bank"
+    },
+    {
+      "id": "config:.ua/config.json",
+      "fanOut": 0,
+      "name": "config.json"
+    }
+  ],
+  "bfsTraversal": {
+    "startNode": "file:src/main/java/com/howtotrainyourai/core/Main.java",
+    "order": [
+      "file:src/main/java/com/howtotrainyourai/core/Main.java",
+      "file:src/main/java/com/howtotrainyourai/gui/CardPanel.java",
+      "file:src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java",
+      "file:src/main/java/com/howtotrainyourai/gui/PlayPanel.java",
+      "file:src/main/java/com/howtotrainyourai/gui/SettingsPanel.java",
+      "file:src/main/java/com/howtotrainyourai/gui/TutorialPanel.java"
+    ],
+    "depthMap": {
+      "file:src/main/java/com/howtotrainyourai/core/Main.java": 0,
+      "file:src/main/java/com/howtotrainyourai/gui/CardPanel.java": 1,
+      "file:src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java": 1,
+      "file:src/main/java/com/howtotrainyourai/gui/PlayPanel.java": 1,
+      "file:src/main/java/com/howtotrainyourai/gui/SettingsPanel.java": 1,
+      "file:src/main/java/com/howtotrainyourai/gui/TutorialPanel.java": 1
+    },
+    "byDepth": {
+      "0": [
+        "file:src/main/java/com/howtotrainyourai/core/Main.java"
+      ],
+      "1": [
+        "file:src/main/java/com/howtotrainyourai/gui/CardPanel.java",
+        "file:src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java",
+        "file:src/main/java/com/howtotrainyourai/gui/PlayPanel.java",
+        "file:src/main/java/com/howtotrainyourai/gui/SettingsPanel.java",
+        "file:src/main/java/com/howtotrainyourai/gui/TutorialPanel.java"
+      ]
+    }
+  },
+  "nonCodeFiles": {
+    "documentation": [
+      {
+        "id": "document:CONTEXT.md",
+        "name": "CONTEXT.md",
+        "type": "document",
+        "summary": "Single source of truth for the project: game proposal, assignment requirements, team execution plan, and the locked CSV data format decision."
+      },
+      {
+        "id": "document:How_To_Train_Your_AI_Plan_v2.md",
+        "name": "How_To_Train_Your_AI_Plan_v2.md",
+        "type": "document",
+        "summary": "Team execution plan: four roles, pre-coding CSV format lock, shared-class scaffolding, week-by-week schedule with integration gates."
+      },
+      {
+        "id": "document:README.md",
+        "name": "README.md",
+        "type": "document",
+        "summary": "Default VS Code Java project README describing src/lib/bin folder structure."
+      }
+    ],
+    "infrastructure": [],
+    "data": [
+      {
+        "id": "table:CMSC 170 Question Bank - Question Bank.csv:QuestionBank",
+        "name": "Question Bank",
+        "type": "table",
+        "summary": "Legacy comma-delimited draft question bank, superseded by the pipe-delimited MCQ/*.csv format."
+      }
+    ],
+    "config": [
+      {
+        "id": "config:MCQ/week01.json",
+        "name": "week01.json",
+        "type": "config",
+        "summary": "Current-format question bank data for the 'Introduction to Artificial Intelligence' module."
+      },
+      {
+        "id": "config:.ua/config.json",
+        "name": "config.json",
+        "type": "config",
+        "summary": "Understand-Anything tooling configuration."
+      }
+    ]
+  },
+  "clusters": [],
+  "layers": {
+    "count": 4,
+    "list": [
+      {
+        "id": "layer:ui",
+        "name": "Presentation Layer",
+        "description": "The Swing GUI: entry point, CardPanel screen router, and the menu/play/settings/tutorial panels."
+      },
+      {
+        "id": "layer:service",
+        "name": "Game Engine Layer",
+        "description": "The engine package's session contracts and value objects that will drive quiz-session logic between the GUI and question data."
+      },
+      {
+        "id": "layer:data",
+        "name": "Data Layer",
+        "description": "Question/Choice model classes plus the underlying question-bank data files the engine layer loads sessions from."
+      },
+      {
+        "id": "layer:documentation",
+        "name": "Documentation & Project Configuration",
+        "description": "Project-level markdown documentation plus tooling configuration."
+      }
+    ]
+  },
+  "nodeSummaryIndex": {
+    "document:CONTEXT.md": {
+      "name": "CONTEXT.md",
+      "type": "document",
+      "summary": "Single source of truth for the project: game proposal, assignment requirements, team execution plan, and the locked CSV data format decision."
+    },
+    "document:How_To_Train_Your_AI_Plan_v2.md": {
+      "name": "How_To_Train_Your_AI_Plan_v2.md",
+      "type": "document",
+      "summary": "Team execution plan: four roles, pre-coding CSV format lock, shared-class scaffolding, week-by-week schedule with integration gates."
+    },
+    "document:README.md": {
+      "name": "README.md",
+      "type": "document",
+      "summary": "Default VS Code Java project README describing src/lib/bin folder structure."
+    },
+    "file:src/main/java/com/howtotrainyourai/core/Main.java": {
+      "name": "Main.java",
+      "type": "file",
+      "summary": "Application entry point that bootstraps the Swing GUI and wires CardPanel-based navigation between screens."
+    },
+    "file:src/main/java/com/howtotrainyourai/gui/CardPanel.java": {
+      "name": "CardPanel.java",
+      "type": "file",
+      "summary": "CardLayout-based screen router registering named screens and switching the visible one."
+    },
+    "file:src/main/java/com/howtotrainyourai/gui/MainMenuPanel.java": {
+      "name": "MainMenuPanel.java",
+      "type": "file",
+      "summary": "Main menu screen with Play/Settings/Tutorial/Exit buttons."
+    },
+    "file:src/main/java/com/howtotrainyourai/gui/PlayPanel.java": {
+      "name": "PlayPanel.java",
+      "type": "file",
+      "summary": "Play screen placeholder with a title and back button."
+    },
+    "file:src/main/java/com/howtotrainyourai/gui/SettingsPanel.java": {
+      "name": "SettingsPanel.java",
+      "type": "file",
+      "summary": "Settings screen placeholder with a title and back button."
+    },
+    "file:src/main/java/com/howtotrainyourai/gui/TutorialPanel.java": {
+      "name": "TutorialPanel.java",
+      "type": "file",
+      "summary": "Tutorial screen placeholder with a title and back button."
+    },
+    "file:src/main/java/com/howtotrainyourai/model/Question.java": {
+      "name": "Question.java",
+      "type": "file",
+      "summary": "Immutable multiple-choice question: id, module, Bloom level, text, explanation, shuffled choices, correct-choice id, isCorrect() check."
+    },
+    "file:src/main/java/com/howtotrainyourai/model/Choice.java": {
+      "name": "Choice.java",
+      "type": "file",
+      "summary": "One answer option: a stable original-letter choiceId plus display text, immune to display-order shuffling."
+    },
+    "file:src/main/java/com/howtotrainyourai/engine/QuestionSource.java": {
+      "name": "QuestionSource.java",
+      "type": "file",
+      "summary": "Interface: buildSession() returns exactly 15 Questions in ascending Bloom order with choices pre-shuffled."
+    },
+    "file:src/main/java/com/howtotrainyourai/engine/GameEngine.java": {
+      "name": "GameEngine.java",
+      "type": "file",
+      "summary": "Interface: startSession/currentQuestion/submitAnswer/endSession — the seam the GUI builds against ahead of the real implementation."
+    },
+    "file:src/main/java/com/howtotrainyourai/engine/TurnResult.java": {
+      "name": "TurnResult.java",
+      "type": "file",
+      "summary": "Immutable per-turn outcome: correctness, tokens awarded/running total, capability-unlock flag/name, game-over flag."
+    },
+    "file:src/main/java/com/howtotrainyourai/engine/Protocol.java": {
+      "name": "Protocol.java",
+      "type": "file",
+      "summary": "Placeholder enum: STANDARD or HIGH_RISK session protocol, values only so far."
+    },
+    "file:src/main/java/com/howtotrainyourai/engine/SessionResult.java": {
+      "name": "SessionResult.java",
+      "type": "file",
+      "summary": "Placeholder class for the finished-session summary; empty until Week 4."
+    },
+    "config:MCQ/week01.json": {
+      "name": "week01.json",
+      "type": "config",
+      "summary": "Current-format question bank data for the 'Introduction to Artificial Intelligence' module."
+    },
+    "table:CMSC 170 Question Bank - Question Bank.csv:QuestionBank": {
+      "name": "Question Bank",
+      "type": "table",
+      "summary": "Legacy comma-delimited draft question bank, superseded by the pipe-delimited MCQ/*.csv format."
+    },
+    "config:.ua/config.json": {
+      "name": "config.json",
+      "type": "config",
+      "summary": "Understand-Anything tooling configuration."
+    }
+  },
+  "totalNodes": 19,
+  "totalEdges": 16
+}

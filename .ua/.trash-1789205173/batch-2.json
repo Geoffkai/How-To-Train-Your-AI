@@ -1,0 +1,64 @@
+{
+  "nodes": [
+    {
+      "id": "table:CMSC 170 Question Bank - Question Bank.csv:QuestionBank",
+      "type": "table",
+      "name": "Question Bank",
+      "filePath": "CMSC 170 Question Bank - Question Bank.csv",
+      "summary": "Legacy comma-delimited draft question bank (769 rows) with per-member AI-themed multiple-choice questions tagged by Bloom's Taxonomy level (Knowledge/Understanding/Application/Analysis/Evaluation/Synthesis); superseded by the pipe-delimited MCQ/*.csv format decided in CONTEXT.md, with content still to be ported rather than discarded.",
+      "tags": ["question-bank", "csv-data", "legacy-format", "superseded", "ai-quiz-content"],
+      "complexity": "complex",
+      "languageNotes": "Comma-delimited with quote-escaping for fields containing commas/newlines; columns are Date, Last Name, Bloom Level, Lesson Code, Learning Resource Code, Question, four choices, Correct Choice, Explanation, Status."
+    },
+    {
+      "id": "document:CONTEXT.md",
+      "type": "document",
+      "name": "CONTEXT.md",
+      "filePath": "CONTEXT.md",
+      "summary": "Single source of truth for the 'How to Train Your AI' quiz game project: synthesizes the game proposal, assignment grading requirements, and team execution plan into core mechanics (Bloom-stage progression, protocols, scoring ladders, lifelines, end conditions), the decided pipe-delimited CSV data format, the assignment requirements checklist, and a timeline anchor.",
+      "tags": ["documentation", "specification", "source-of-truth", "game-design", "requirements"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:How_To_Train_Your_AI_Plan_v2.md",
+      "type": "document",
+      "name": "How_To_Train_Your_AI_Plan_v2.md",
+      "filePath": "How_To_Train_Your_AI_Plan_v2.md",
+      "summary": "Team execution plan (v2) laying out the four team roles, the pre-coding CSV format lock and shared-class scaffolding, module ownership for question writing, and a week-by-week (Week 1 through final submission) schedule with integration gates and a project risk table.",
+      "tags": ["documentation", "project-plan", "timeline", "team-roles", "development-process"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "README.md",
+      "summary": "Default VS Code Java project README describing the standard src/lib/bin folder structure and pointing to the JAVA PROJECTS view for dependency management.",
+      "tags": ["documentation", "entry-point", "getting-started", "vscode", "java-project"],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "document:CONTEXT.md",
+      "target": "document:How_To_Train_Your_AI_Plan_v2.md",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CONTEXT.md",
+      "target": "table:CMSC 170 Question Bank - Question Bank.csv:QuestionBank",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:How_To_Train_Your_AI_Plan_v2.md",
+      "target": "table:CMSC 170 Question Bank - Question Bank.csv:QuestionBank",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}
