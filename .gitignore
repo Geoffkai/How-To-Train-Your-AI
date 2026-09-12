@@ -24,5 +24,10 @@ bin/
 hs_err_pid*
 replay_pid*
 
+# The Proposal and Assignment Guide
 *.pdf
+
+# Geoff Files
+R1_Engine_Weekly_Plan.md
+
 
