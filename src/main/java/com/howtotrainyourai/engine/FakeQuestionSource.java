@@ -168,7 +168,7 @@ public class FakeQuestionSource implements QuestionSource {
                 choices14.add(new Choice("c", "dummychoice14c"));
                 choices14.add(new Choice("d", "dummychoice14d"));
                 Question question14 = new Question("fake14", "7", "Synthesis", "Dummy Question 14",
-                                "Dummy Explanation 14", choices14, "c"
+                                "Dummy Explanation 14", choices14, "c");
 
                 ArrayList<Choice> choices15 = new ArrayList<>();
                 choices15.add(new Choice("a", "dummychoice15a"));
