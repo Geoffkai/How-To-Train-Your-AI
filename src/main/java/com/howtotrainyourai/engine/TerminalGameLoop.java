@@ -16,8 +16,8 @@ public class TerminalGameLoop {
         // TODO 1: Get your questions.
         // - new FakeQuestionSource(), then call .buildSession() on it to
         // get your List<Question>.
-        FakeQuestionSource fakeQuestionSouce = new FakeQuestionSource();
-        List<Question> fakeQuestions = fakeQuestionSouce.buildSession();
+        FakeQuestionSource fakeQuestionSource = new FakeQuestionSource();
+        List<Question> fakeQuestions = fakeQuestionSource.buildSession();
 
         // TODO 2: Open ONE Scanner over System.in for the whole game
         // (create it once, before the loop — not one per question).
