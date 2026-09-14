@@ -160,6 +160,29 @@ public final class QuestionBankLoader {
         if (f.length() >= 2 && f.startsWith("\"") && f.endsWith("\"")) {
             f = f.substring(1, f.length() - 1);
         }
-        return f.replace("\"\"", "\"").strip();
+        f = f.replace("\"\"", "\"").strip();
+        return normalizeTypographicPunctuation(f);
+    }
+
+    /**
+     * Replaces "smart"/typographic punctuation (curly quotes, en/em dashes,
+     * ellipsis) with their plain ASCII equivalents. The source spreadsheet
+     * auto-substitutes these, and while they're perfectly valid UTF-8 (this
+     * loader reads the file as UTF-8), printing them depends on the reading
+     * program's console/output encoding actually supporting them -- which
+     * isn't guaranteed (e.g. a Windows terminal on a legacy codepage will
+     * silently print "?" instead). Normalizing here means every question's
+     * text is safe to print anywhere, regardless of that.
+     */
+    private static String normalizeTypographicPunctuation(String s) {
+        return s
+                .replace('\u2018', '\'')   // ‘ left single quote
+                .replace('\u2019', '\'')   // ’ right single quote / apostrophe
+                .replace('\u201C', '"')    // “ left double quote
+                .replace('\u201D', '"')    // ” right double quote
+                .replace('\u2013', '-')    // – en dash
+                .replace('\u2014', '-')    // — em dash
+                .replace("\u2026", "...")  // … ellipsis
+                .strip();
     }
 }
