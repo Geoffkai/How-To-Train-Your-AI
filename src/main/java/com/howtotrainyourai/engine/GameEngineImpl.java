@@ -1,6 +1,7 @@
 package com.howtotrainyourai.engine;
 
 import com.howtotrainyourai.model.Question;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -22,83 +23,93 @@ import java.util.List;
 public class GameEngineImpl implements GameEngine {
 
     private final QuestionSource questionSource;
+    private int tokenTotal;
+    private int questionIndex;
+    private boolean isRunning;
+    private Protocol protocol; // active ruleset for this session
+    private List<Question> sessionQuestions; // the 15 questions, in order
+    private int securedScore; // tokenTotal to roll back to on failure
+    private int securedIndex; // questionIndex to roll back to on failure
+    private String trainerName;
 
-    // TODO 1: add the fields you need to track one session's state. At
-    // minimum you'll need something for:
-    //  - the active Protocol (set in startSession)
-    //  - the 15 questions for this session (set in startSession)
-    //  - which question index the player is currently on
-    //  - the running token total
-    //  - the SECURED score and SECURED question index -- i.e. what to roll
-    //    back to on failure (see CONTEXT.md §2.2: "checkpoints secure the
-    //    token score and capability progress reached so far")
-    //  - whether the session has already ended
-    //
-    // Think about what a brand-new engine (before startSession is ever
-    // called) should have in these fields, since currentQuestion() /
-    // submitAnswer() need to behave sanely if called too early.
-
-    public GameEngineImpl(QuestionSource questionSource) {
+    public GameEngineImpl(QuestionSource questionSource, Protocol protocol) {
         this.questionSource = questionSource;
     }
 
     @Override
     public void startSession(String trainerName, Protocol protocol) {
-        // TODO 2: build the session via questionSource.buildSession() and
-        // reset ALL of the state fields from TODO 1 to their starting
-        // values for a fresh game (index 0, running total 0, nothing
-        // secured yet, not over).
+        // Pure state reset -- no printing, no Scanner. This has to be safe
+        // to call from a GUI button click, not just a terminal loop, so it
+        // does nothing but build data and assign fields.
+        this.trainerName = trainerName;
+        this.protocol = protocol;
+        this.sessionQuestions = questionSource.buildSession();
+        this.questionIndex = 0;
+        this.tokenTotal = 0;
+        this.securedScore = 0;
+        this.securedIndex = 0;
+        this.isRunning = true;
     }
 
     @Override
     public Question currentQuestion() {
-        // TODO 3: return the question at the current index.
-        return null; // TODO: replace with the real question
+        return sessionQuestions.get(questionIndex);
     }
 
     @Override
     public TurnResult submitAnswer(String choiceId) {
+        HashMap<Integer, String> capabilityMap = new HashMap<>();
+        capabilityMap.put(3, "Memory");
+        capabilityMap.put(5, "Understanding");
+        capabilityMap.put(8, "Application");
+        capabilityMap.put(10, "Analysis");
+        capabilityMap.put(13, "Evaluation");
+        capabilityMap.put(15, "Synthesize");
+        boolean capabilityUnlocked;
+        boolean isGameOver;
+        boolean isCorrect;
+        String capabilityName;
+        int tokensAwarded;
+
         // TODO 4: this is the core of the engine. Work through it in this
         // order -- write each piece, and consider testing it before moving
         // to the next:
-        //
-        //  a) Ask the current question whether choiceId is correct
-        //     (Question.isCorrect(choiceId)).
-        //
-        //  b) tokensAwarded: 0 if wrong. If correct, look up the value from
-        //     ScoreLadder.STANDARD or ScoreLadder.HIGH_RISK (whichever
-        //     matches the active Protocol) at the current question index.
-        //
-        //  c) Update the running total by tokensAwarded.
-        //
-        //  d) capabilityUnlocked / capabilityName: true only when this
-        //     question's number (index + 1) is one of 3, 5, 8, 10, 13, 15
-        //     (CONTEXT.md §2.1) -- only check this if the answer was
-        //     correct, since a wrong answer on e.g. Q3 shouldn't unlock
-        //     Memory.
-        //
-        //  e) Checkpoint securing: if the answer was correct AND this
-        //     question's number is one of the active Protocol's checkpoint
-        //     numbers, "secure" the current running total and index into
-        //     your secured-score/secured-index fields.
-        //
-        //  f) gameOver: true if the answer was wrong (see the class-level
-        //     ASSUMPTION above), OR if the answer was correct and this was
-        //     the last question (Q15).
-        //
-        //  g) On a wrong answer specifically: the running total the GUI
-        //     sees should roll back to whatever was last secured -- not
-        //     stay at whatever it was before this wrong answer. Re-read
-        //     CONTEXT.md §2.2's rollback rule if that sentence doesn't
-        //     click yet.
-        //
-        //  h) Only advance to the next question index if the session isn't
-        //     over -- a wrong answer or a Q15 win shouldn't move past the
-        //     end of the list.
-        //
-        //  i) Build and return the TurnResult with everything computed
-        //     above.
-        return null; // TODO: replace with the real TurnResult
+        Question currentQuestion = currentQuestion();
+
+        if (currentQuestion.isCorrect(choiceId)) {
+            isCorrect = true;
+
+            tokensAwarded = protocol == Protocol.STANDARD ? ScoreLadder.STANDARD[questionIndex]
+                    : ScoreLadder.HIGH_RISK[questionIndex];
+            tokenTotal += tokensAwarded;
+
+            if (capabilityMap.containsKey(questionIndex + 1)) {
+                capabilityUnlocked = true;
+                capabilityName = capabilityMap.get(questionIndex + 1);
+            } else {
+                capabilityUnlocked = false;
+                capabilityName = null;
+            }
+
+            for (int index : protocol.getCheckpointQuestion()) {
+                if ((questionIndex + 1) == index) {
+                    securedScore = tokenTotal;
+                    securedIndex = questionIndex;
+                    break;
+                }
+            }
+
+            isGameOver = (questionIndex + 1) == 15;
+            questionIndex++;
+        } else {
+            isCorrect = false;
+            tokensAwarded = 0;
+            tokenTotal = securedScore;
+            capabilityUnlocked = false;
+            capabilityName = null;
+            isGameOver = true;
+        }
+        return new TurnResult(isCorrect, tokensAwarded, tokenTotal, capabilityUnlocked, capabilityName, isGameOver);
     }
 
     @Override
@@ -107,6 +118,7 @@ public class GameEngineImpl implements GameEngine {
         // empty stub (that's Week 4 work per R1_Engine_Weekly_Plan.md) --
         // for now just return `new SessionResult()` so this compiles and
         // the "Return early" end condition has somewhere to go.
-        return null; // TODO: replace with a real SessionResult
+
+        return new SessionResult(); // TODO: replace with a real SessionResult
     }
 }
