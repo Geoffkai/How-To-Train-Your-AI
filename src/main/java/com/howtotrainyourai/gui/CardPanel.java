@@ -9,6 +9,8 @@ public class CardPanel extends JPanel {
     public static final String PLAY = "PLAY";
     public static final String SETTINGS = "SETTINGS";
     public static final String TUTORIAL = "TUTORIAL";
+    public static final String SPLASH = "SPLASH";
+    
 
     private final CardLayout cardLayout;
 
