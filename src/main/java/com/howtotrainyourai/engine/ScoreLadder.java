@@ -13,6 +13,6 @@ public final class ScoreLadder {
         // static utility class -- not meant to be instantiated
     }
 
-    public static final int[] STANDARD = { 10, 15, 25, 35, 50, 70, 95, 125, 165, 215, 275, 350, 425, 500 };
+    public static final int[] STANDARD = { 10, 15, 25, 35, 50, 70, 95, 125, 165, 215, 275, 350, 425, 475, 500 };
     public static final int[] HIGH_RISK = { 20, 30, 50, 70, 100, 140, 190, 250, 330, 430, 550, 700, 850, 950, 1000 };
 }
