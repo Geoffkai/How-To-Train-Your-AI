@@ -32,7 +32,7 @@ public class GameEngineImpl implements GameEngine {
     private int securedIndex; // questionIndex to roll back to on failure
     private String trainerName;
 
-    public GameEngineImpl(QuestionSource questionSource, Protocol protocol) {
+    public GameEngineImpl(QuestionSource questionSource) {
         this.questionSource = questionSource;
     }
 
@@ -114,11 +114,7 @@ public class GameEngineImpl implements GameEngine {
 
     @Override
     public SessionResult endSession() {
-        // TODO 5: mark the session over. SessionResult itself is still an
-        // empty stub (that's Week 4 work per R1_Engine_Weekly_Plan.md) --
-        // for now just return `new SessionResult()` so this compiles and
-        // the "Return early" end condition has somewhere to go.
-
-        return new SessionResult(); // TODO: replace with a real SessionResult
+        isRunning = false;
+        return new SessionResult();
     }
 }
