@@ -1,4 +1,4 @@
-package com.howtotrainyourai.engine;
+package com.howtotrainyourai.data;
 
 import com.howtotrainyourai.model.Choice;
 import com.howtotrainyourai.model.Question;
@@ -10,10 +10,10 @@ import java.util.Scanner;
  * QuestionBankLoader + CsvQuestionSource before wiring them into GameEngine.
  *
  * For every question in a session it shows:
- *  - the question text
- *  - the (already-shuffled) answer choices, labeled A-D
- *  - after you answer: the correct answer (always, for debugging/testing)
- *  - if you got it wrong: the explanation
+ * - the question text
+ * - the (already-shuffled) answer choices, labeled A-D
+ * - after you answer: the correct answer (always, for debugging/testing)
+ * - if you got it wrong: the explanation
  *
  * At the end it prints your score out of 15.
  */
@@ -122,13 +122,20 @@ public class TerminalQuestionBank {
     /** Friendlier display names for the raw Bloom stage names from the CSV. */
     private static String displayCategory(String bloom) {
         switch (bloom) {
-            case "Remember":   return "Memory";
-            case "Understand": return "Understanding";
-            case "Apply":      return "Application";
-            case "Analyze":    return "Analysis";
-            case "Evaluate":   return "Evaluation";
-            case "Synthesis":  return "Synthesize";
-            default:           return bloom;
+            case "Remember":
+                return "Memory";
+            case "Understand":
+                return "Understanding";
+            case "Apply":
+                return "Application";
+            case "Analyze":
+                return "Analysis";
+            case "Evaluate":
+                return "Evaluation";
+            case "Synthesis":
+                return "Synthesize";
+            default:
+                return bloom;
         }
     }
 }

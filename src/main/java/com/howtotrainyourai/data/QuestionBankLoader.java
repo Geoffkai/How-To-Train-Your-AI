@@ -1,4 +1,4 @@
-package com.howtotrainyourai.engine;
+package com.howtotrainyourai.data;
 
 import com.howtotrainyourai.model.Choice;
 import com.howtotrainyourai.model.Question;
@@ -19,7 +19,7 @@ import java.util.List;
  * selection/shuffling logic lives in CsvQuestionSource.
  *
  * Expected column order (10 columns, delimiter "|"):
- *   id|module|bloom|question|choiceA|choiceB|choiceC|choiceD|correct|explanation
+ * id|module|bloom|question|choiceA|choiceB|choiceC|choiceD|correct|explanation
  *
  * A field may optionally be wrapped in double quotes (a leftover from the
  * source spreadsheet's CSV export, e.g. fields that used to contain a comma
@@ -48,7 +48,8 @@ public final class QuestionBankLoader {
     /**
      * Loads every question from the given classpath resource.
      *
-     * @param resourcePath a classpath-relative path, e.g. "/data/Question_Bank_PDL.csv"
+     * @param resourcePath a classpath-relative path, e.g.
+     *                     "/data/Question_Bank_PDL.csv"
      */
     public static List<Question> loadAll(String resourcePath) {
         try (InputStream in = QuestionBankLoader.class.getResourceAsStream(resourcePath)) {
@@ -56,8 +57,7 @@ public final class QuestionBankLoader {
                 throw new IllegalStateException(
                         "Question bank resource not found on classpath: " + resourcePath);
             }
-            try (BufferedReader reader =
-                    new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
                 return parse(reader);
             }
         } catch (IOException e) {
@@ -176,13 +176,13 @@ public final class QuestionBankLoader {
      */
     private static String normalizeTypographicPunctuation(String s) {
         return s
-                .replace('\u2018', '\'')   // ‘ left single quote
-                .replace('\u2019', '\'')   // ’ right single quote / apostrophe
-                .replace('\u201C', '"')    // “ left double quote
-                .replace('\u201D', '"')    // ” right double quote
-                .replace('\u2013', '-')    // – en dash
-                .replace('\u2014', '-')    // — em dash
-                .replace("\u2026", "...")  // … ellipsis
+                .replace('\u2018', '\'') // ‘ left single quote
+                .replace('\u2019', '\'') // ’ right single quote / apostrophe
+                .replace('\u201C', '"') // “ left double quote
+                .replace('\u201D', '"') // ” right double quote
+                .replace('\u2013', '-') // – en dash
+                .replace('\u2014', '-') // — em dash
+                .replace("\u2026", "...") // … ellipsis
                 .strip();
     }
 }
