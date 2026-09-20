@@ -53,11 +53,13 @@ public class GameEngineImpl implements GameEngine {
 
     @Override
     public Question currentQuestion() {
+        requireActiveSession();
         return sessionQuestions.get(questionIndex);
     }
 
     @Override
     public TurnResult submitAnswer(String choiceId) {
+        requireActiveSession();
         HashMap<Integer, String> capabilityMap = new HashMap<>();
         capabilityMap.put(3, "Memory");
         capabilityMap.put(5, "Understanding");
@@ -109,6 +111,16 @@ public class GameEngineImpl implements GameEngine {
             capabilityName = null;
             isGameOver = true;
         }
+
+        // The session is dead the moment it's over -- both when the player
+        // wins Q15 (questionIndex is now 15, past the end of the list) and
+        // when a wrong answer ends the run (questionIndex never advanced).
+        // Flipping the flag here is what stops a second click from
+        // re-scoring the same question or walking off the end.
+        if (isGameOver) {
+            isRunning = false;
+        }
+
         return new TurnResult(isCorrect, tokensAwarded, tokenTotal, capabilityUnlocked, capabilityName, isGameOver);
     }
 
@@ -116,5 +128,18 @@ public class GameEngineImpl implements GameEngine {
     public SessionResult endSession() {
         isRunning = false;
         return new SessionResult();
+    }
+
+    /**
+     * Rejects any call that needs a live session -- before startSession(), or
+     * after the session ended (game over, win, or "Return"). A GUI can't be
+     * trusted to stop calling on its own: a double-clicked answer button or a
+     * stale screen would otherwise crash or corrupt the score. Failing loudly
+     * here beats silently re-scoring a finished game.
+     */
+    private void requireActiveSession() {
+        if (!isRunning || sessionQuestions == null) {
+            throw new IllegalStateException("no active session");
+        }
     }
 }
