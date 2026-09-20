@@ -9,27 +9,33 @@ import java.io.IOException;
 
 public class SplashPanel extends JPanel {
 
-    private static final String IMAGE_PATH = "src/main/resources/elements/splashscreen.png";
-    private static final int AUTO_ADVANCE_MS = 3000;
-    private static final int FADE_IN_MS = 500;
-    private static final int FADE_OUT_MS = 500;
+    private static final String EMPTY_FRAME_IMAGE_PATH = "src/main/resources/elements/background.png";
+    private static final String FULL_SPLASH_IMAGE_PATH = "src/main/resources/elements/splashscreen.png";
 
-    // Breathing/pulse animation tuning
-    private static final int ANIMATION_FPS = 30;
-    private static final double PULSE_SPEED = 0.05;   // how fast it breathes
-    private static final double PULSE_AMOUNT = 0.02;  // how much it scales (2%)
+    // Timeline (all in ms) - adds up to the total time on screen
+    private static final int FADE_IN_MS = 500;      // empty frame fades in from black
+    private static final int STAGE1_HOLD_MS = 800;  // empty frame sits alone
+    private static final int CROSSFADE_MS = 700;    // empty frame -> full splash
+    private static final int STAGE2_HOLD_MS = 1100;  // full splash sits alone
+    private static final int FADE_OUT_MS = 500;     // full splash fades to black
+
+    private static final int T0 = FADE_IN_MS;
+    private static final int T1 = T0 + STAGE1_HOLD_MS;
+    private static final int T2 = T1 + CROSSFADE_MS;
+    private static final int T3 = T2 + STAGE2_HOLD_MS;
+    private static final int T4 = T3 + FADE_OUT_MS;
 
     private final CardPanel cardPanel;
-    private Image splashImage;
+    private Image emptyFrameImage;
+    private Image fullSplashImage;
     private Timer autoAdvanceTimer;
     private Timer animationTimer;
-    private double pulsePhase = 0.0;
     private long startTimeMs = 0L;
 
     public SplashPanel(CardPanel cardPanel) {
         this.cardPanel = cardPanel;
         setBackground(Color.BLACK);
-        loadImage();
+        loadImages();
 
         setFocusable(true);
         addMouseListener(new MouseAdapter() {
@@ -46,11 +52,16 @@ public class SplashPanel extends JPanel {
         });
     }
 
-    private void loadImage() {
+    private void loadImages() {
         try {
-            splashImage = ImageIO.read(new File(IMAGE_PATH));
+            emptyFrameImage = ImageIO.read(new File(EMPTY_FRAME_IMAGE_PATH));
         } catch (IOException e) {
-            System.err.println("Failed to load splash image: " + e.getMessage());
+            System.err.println("Failed to load empty frame image: " + e.getMessage());
+        }
+        try {
+            fullSplashImage = ImageIO.read(new File(FULL_SPLASH_IMAGE_PATH));
+        } catch (IOException e) {
+            System.err.println("Failed to load full splash image: " + e.getMessage());
         }
     }
 
@@ -71,18 +82,15 @@ public class SplashPanel extends JPanel {
 
     private void startAutoAdvance() {
         if (autoAdvanceTimer != null && autoAdvanceTimer.isRunning()) return;
-        autoAdvanceTimer = new Timer(AUTO_ADVANCE_MS, e -> goToMenu());
+        autoAdvanceTimer = new Timer(T4, e -> goToMenu());
         autoAdvanceTimer.setRepeats(false);
         autoAdvanceTimer.start();
     }
 
+    /** Just drives repaint() so the fade/crossfade timeline renders smoothly. No pulse/scale effects. */
     private void startAnimation() {
         if (animationTimer != null && animationTimer.isRunning()) return;
-        int delayMs = 1000 / ANIMATION_FPS;
-        animationTimer = new Timer(delayMs, e -> {
-            pulsePhase += PULSE_SPEED;
-            repaint();
-        });
+        animationTimer = new Timer(1000 / 30, e -> repaint());
         animationTimer.start();
     }
 
@@ -100,33 +108,76 @@ public class SplashPanel extends JPanel {
         cardPanel.showScreen(CardPanel.MENU);
     }
 
-    /** Returns 0.0 (fully faded to black) to 1.0 (fully visible) based on elapsed time. */
-    private double computeFadeAlpha() {
-        long elapsed = System.currentTimeMillis() - startTimeMs;
-
-        if (elapsed < FADE_IN_MS) {
-            return clamp01((double) elapsed / FADE_IN_MS);
-        }
-
-        long fadeOutStart = AUTO_ADVANCE_MS - FADE_OUT_MS;
-        if (elapsed > fadeOutStart) {
-            double remaining = AUTO_ADVANCE_MS - elapsed;
-            return clamp01(remaining / FADE_OUT_MS);
-        }
-
-        return 1.0;
-    }
-
     private double clamp01(double v) {
         if (v < 0.0) return 0.0;
         if (v > 1.0) return 1.0;
         return v;
     }
 
+    /** Empty frame alpha: fades in, holds, fades out during the crossfade. */
+    private double computeEmptyFrameAlpha(long elapsed) {
+        if (elapsed < T0) {
+            return clamp01((double) elapsed / FADE_IN_MS);
+        }
+        if (elapsed < T1) {
+            return 1.0;
+        }
+        if (elapsed < T2) {
+            double progressed = elapsed - T1;
+            return clamp01(1.0 - (progressed / CROSSFADE_MS));
+        }
+        return 0.0;
+    }
+
+    /** Full splash alpha: 0 until crossfade starts, ramps up, holds, then fades to black. */
+    private double computeFullSplashAlpha(long elapsed) {
+        if (elapsed < T1) {
+            return 0.0;
+        }
+        if (elapsed < T2) {
+            double progressed = elapsed - T1;
+            return clamp01(progressed / CROSSFADE_MS);
+        }
+        if (elapsed < T3) {
+            return 1.0;
+        }
+        if (elapsed < T4) {
+            double progressed = elapsed - T3;
+            return clamp01(1.0 - (progressed / FADE_OUT_MS));
+        }
+        return 0.0;
+    }
+
+    private void drawFitted(Graphics2D g2, Image img, int panelW, int panelH, double alpha) {
+        if (img == null || alpha <= 0.0) return;
+
+        int imgW = img.getWidth(this);
+        int imgH = img.getHeight(this);
+        if (imgW <= 0 || imgH <= 0) return;
+
+        double imgRatio = (double) imgW / imgH;
+        double panelRatio = (double) panelW / panelH;
+
+        int drawW, drawH;
+        if (panelRatio > imgRatio) {
+            drawH = panelH;
+            drawW = (int) (drawH * imgRatio);
+        } else {
+            drawW = panelW;
+            drawH = (int) (drawW / imgRatio);
+        }
+        int x = (panelW - drawW) / 2;
+        int y = (panelH - drawH) / 2;
+
+        Composite original = g2.getComposite();
+        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) alpha));
+        g2.drawImage(img, x, y, drawW, drawH, this);
+        g2.setComposite(original);
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        if (splashImage == null) return;
 
         Graphics2D g2 = (Graphics2D) g;
         g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
@@ -134,37 +185,12 @@ public class SplashPanel extends JPanel {
 
         int panelW = getWidth();
         int panelH = getHeight();
-        int imgW = splashImage.getWidth(this);
-        int imgH = splashImage.getHeight(this);
-        if (imgW <= 0 || imgH <= 0) return;
+        long elapsed = System.currentTimeMillis() - startTimeMs;
 
-        double imgRatio = (double) imgW / imgH;
-        double panelRatio = (double) panelW / panelH;
+        double emptyFrameAlpha = computeEmptyFrameAlpha(elapsed);
+        double fullSplashAlpha = computeFullSplashAlpha(elapsed);
 
-        int baseDrawW, baseDrawH;
-        if (panelRatio > imgRatio) {
-            baseDrawH = panelH;
-            baseDrawW = (int) (baseDrawH * imgRatio);
-        } else {
-            baseDrawW = panelW;
-            baseDrawH = (int) (baseDrawW / imgRatio);
-        }
-
-        // Breathing pulse: gentle sine wave scale around 1.0
-        double pulseScale = 1.0 + PULSE_AMOUNT * Math.sin(pulsePhase);
-        int drawW = (int) (baseDrawW * pulseScale);
-        int drawH = (int) (baseDrawH * pulseScale);
-
-        int x = (panelW - drawW) / 2;
-        int y = (panelH - drawH) / 2;
-
-        // Fade in/out: applied as image transparency over the black background
-        double alpha = computeFadeAlpha();
-        Composite originalComposite = g2.getComposite();
-        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) alpha));
-
-        g2.drawImage(splashImage, x, y, drawW, drawH, this);
-
-        g2.setComposite(originalComposite);
+        drawFitted(g2, emptyFrameImage, panelW, panelH, emptyFrameAlpha);
+        drawFitted(g2, fullSplashImage, panelW, panelH, fullSplashAlpha);
     }
 }
