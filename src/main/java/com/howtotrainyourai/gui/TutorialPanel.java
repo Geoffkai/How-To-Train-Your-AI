@@ -10,7 +10,10 @@ import java.io.IOException;
 public class TutorialPanel extends JPanel {
 
     private static final String BG_IMAGE_PATH = "src/main/resources/elements/background1.png";
+    private static final String TITLE_IMAGE_PATH = "src/main/resources/elements/tutorial.png";
     private static final String BACK_BUTTON_IMAGE_PATH = "src/main/resources/elements/back.png";
+
+    private static final int TITLE_TARGET_WIDTH = 280;
 
     private Image bgImage;
 
@@ -19,10 +22,8 @@ public class TutorialPanel extends JPanel {
         setLayout(new BorderLayout());
         loadBackground();
 
-        // Center Title Label
-        JLabel titleLabel = new JLabel("TUTORIAL", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 54));
-        titleLabel.setForeground(Color.WHITE);
+        JLabel titleLabel = createTitleLabel();
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(160, 0, 0, 0));
         add(titleLabel, BorderLayout.CENTER);
 
         // Bottom right container for back button
@@ -41,16 +42,34 @@ public class TutorialPanel extends JPanel {
         }
     }
 
+    private JLabel createTitleLabel() {
+        JLabel titleLabel = new JLabel("", SwingConstants.CENTER);
+        try {
+            BufferedImage fullImg = ImageIO.read(new File(TITLE_IMAGE_PATH));
+            if (fullImg != null) {
+                BufferedImage cropped = autoCrop(fullImg);
+                int targetWidth = TITLE_TARGET_WIDTH;
+                int targetHeight = (int) ((double) cropped.getHeight() / cropped.getWidth() * targetWidth);
+                Image scaled = cropped.getScaledInstance(targetWidth, targetHeight, Image.SCALE_SMOOTH);
+                titleLabel.setIcon(new ImageIcon(scaled));
+                titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            }
+        } catch (IOException e) {
+            System.err.println("Could not load title image, using text fallback: " + e.getMessage());
+            titleLabel.setText("TUTORIAL");
+            titleLabel.setFont(new Font("SansSerif", Font.BOLD, 54));
+            titleLabel.setForeground(Color.WHITE);
+        }
+        return titleLabel;
+    }
+
     private JButton createBackButton(CardPanel cardPanel) {
         JButton backButton = new JButton();
 
         try {
             BufferedImage fullImg = ImageIO.read(new File(BACK_BUTTON_IMAGE_PATH));
             if (fullImg != null) {
-                // Autocrop the transparent margins around the 6000x3375 canvas
                 BufferedImage cropped = autoCrop(fullImg);
-
-                // Scale the tightly cropped button to standard UI dimensions
                 int targetWidth = 220;
                 int targetHeight = 75;
                 Image scaled = cropped.getScaledInstance(targetWidth, targetHeight, Image.SCALE_SMOOTH);
@@ -58,7 +77,7 @@ public class TutorialPanel extends JPanel {
             }
         } catch (IOException e) {
             System.err.println("Could not load back.png: " + e.getMessage());
-            backButton.setText("◀ BACK");
+            backButton.setText("<< BACK");
             backButton.setFont(new Font("SansSerif", Font.BOLD, 22));
             backButton.setForeground(Color.CYAN);
         }
@@ -73,62 +92,39 @@ public class TutorialPanel extends JPanel {
         return backButton;
     }
 
-    /**
-     * Trims transparent pixels surrounding the actual button graphic
-     */
     private BufferedImage autoCrop(BufferedImage src) {
         int width = src.getWidth();
         int height = src.getHeight();
 
         int top = 0, bottom = height - 1, left = 0, right = width - 1;
 
-        // Scan from top
         topLoop:
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                if (((src.getRGB(x, y) >> 24) & 0xFF) != 0) {
-                    top = y;
-                    break topLoop;
-                }
+                if (((src.getRGB(x, y) >> 24) & 0xFF) != 0) { top = y; break topLoop; }
             }
         }
-
-        // Scan from bottom
         bottomLoop:
         for (int y = height - 1; y >= 0; y--) {
             for (int x = 0; x < width; x++) {
-                if (((src.getRGB(x, y) >> 24) & 0xFF) != 0) {
-                    bottom = y;
-                    break bottomLoop;
-                }
+                if (((src.getRGB(x, y) >> 24) & 0xFF) != 0) { bottom = y; break bottomLoop; }
             }
         }
-
-        // Scan from left
         leftLoop:
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
-                if (((src.getRGB(x, y) >> 24) & 0xFF) != 0) {
-                    left = x;
-                    break leftLoop;
-                }
+                if (((src.getRGB(x, y) >> 24) & 0xFF) != 0) { left = x; break leftLoop; }
             }
         }
-
-        // Scan from right
         rightLoop:
         for (int x = width - 1; x >= 0; x--) {
             for (int y = 0; y < height; y++) {
-                if (((src.getRGB(x, y) >> 24) & 0xFF) != 0) {
-                    right = x;
-                    break rightLoop;
-                }
+                if (((src.getRGB(x, y) >> 24) & 0xFF) != 0) { right = x; break rightLoop; }
             }
         }
 
         int cropW = Math.max(1, right - left + 1);
         int cropH = Math.max(1, bottom - top + 1);
-
         return src.getSubimage(left, top, cropW, cropH);
     }
 
