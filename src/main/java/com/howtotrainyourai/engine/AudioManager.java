@@ -1,10 +1,12 @@
 package com.howtotrainyourai.engine;
 
+import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.FloatControl;
 import javax.sound.sampled.LineUnavailableException;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -96,5 +98,48 @@ public class AudioManager {
         FloatControl gain = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
         float dB = volume <= 0f ? gain.getMinimum() : (float) (Math.log10(volume) * 20.0);
         gain.setValue(Math.max(gain.getMinimum(), Math.min(gain.getMaximum(), dB)));
+    }
+
+    // runnable self-check, no bundled wav assets to point at yet so it makes its own tone.
+    // just exercises load/play/volume and checks nothing throws or drifts.
+    public static void main(String[] args) throws Exception {
+        AudioManager audioManager = new AudioManager();
+
+        audioManager.loadSfx("beep", generateTone(440, 300));
+        audioManager.loadMusic(generateTone(220, 300));
+
+        audioManager.playSfx("beep");
+        Thread.sleep(350);
+
+        audioManager.setSfxVolume(0.3f);
+        if (audioManager.getSfxVolume() != 0.3f) {
+            throw new IllegalStateException("sfx volume didn't stick");
+        }
+        audioManager.playSfx("beep");
+        Thread.sleep(350);
+
+        audioManager.setMusicVolume(0.5f);
+        if (audioManager.getMusicVolume() != 0.5f) {
+            throw new IllegalStateException("music volume didn't stick");
+        }
+        audioManager.playMusic();
+        Thread.sleep(350);
+        audioManager.stopMusic();
+
+        System.out.println("audiomanager self-check passed");
+    }
+
+    // in-memory mono 16-bit pcm sine wave, no bundled asset needed for the self-check
+    private static AudioInputStream generateTone(double frequencyHz, int durationMs) {
+        float sampleRate = 44100f;
+        int frameCount = (int) (sampleRate * durationMs / 1000);
+        byte[] pcm = new byte[frameCount * 2];
+        for (int i = 0; i < frameCount; i++) {
+            short sample = (short) (Math.sin(2 * Math.PI * frequencyHz * i / sampleRate) * Short.MAX_VALUE * 0.5);
+            pcm[i * 2] = (byte) (sample & 0xff);
+            pcm[i * 2 + 1] = (byte) ((sample >> 8) & 0xff);
+        }
+        AudioFormat format = new AudioFormat(sampleRate, 16, 1, true, false);
+        return new AudioInputStream(new ByteArrayInputStream(pcm), format, frameCount);
     }
 }
