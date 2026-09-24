@@ -11,6 +11,13 @@ import javax.swing.*;
 public class Main {
 
     public static void main(String[] args) {
+        // aqua (macos) ignores custom JButton colors/borders otherwise, every screen's
+        // buttons need this or they render invisible/unstyled on a mac
+        try {
+            UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
+        } catch (Exception ignored) {
+            // worst case we're back to whatever the platform default is
+        }
         SwingUtilities.invokeLater(Main::createAndShowGUI);
     }
 
