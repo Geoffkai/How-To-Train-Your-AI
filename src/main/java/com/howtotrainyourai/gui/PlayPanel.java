@@ -230,6 +230,8 @@ public class PlayPanel extends JPanel {
         monitorPanel.setMode(AiMonitorPanel.Mode.TENSE);
         nextButton.setText("Next");
         nextButton.setEnabled(false);
+        nextButton.revalidate();
+        nextButton.repaint();
     }
 
     private void refreshLadder() {
@@ -275,6 +277,9 @@ public class PlayPanel extends JPanel {
 
         nextButton.setText(sessionOver ? "Back to Menu" : "Next");
         nextButton.setEnabled(true);
+        // aqua sometimes doesn't repaint a re-enabled button on its own, force it
+        nextButton.revalidate();
+        nextButton.repaint();
     }
 
     // small crt-style "ai vitals" readout, same monitor shown on every screen in the figma file
@@ -336,7 +341,11 @@ public class PlayPanel extends JPanel {
 
     // manual visual check only, GameEngineImpl (real rules/ladder) is week 2 work owned
     // elsewhere. this stubs just enough of the interface to click through the layout.
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
+        // aqua (macos) ignores custom JButton colors/borders otherwise, brass buttons
+        // render as invisible/unstyled text instead
+        UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
+
         List<Question> questions = new FakeQuestionSource().buildSession();
 
         GameEngine demoEngine = new GameEngine() {
