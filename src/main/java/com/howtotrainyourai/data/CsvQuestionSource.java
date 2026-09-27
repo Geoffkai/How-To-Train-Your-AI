@@ -1,7 +1,7 @@
-package com.howtotrainyourai.engine;
+package com.howtotrainyourai.data;
 
+import com.howtotrainyourai.engine.QuestionSource;
 import com.howtotrainyourai.model.Question;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -13,21 +13,24 @@ import java.util.Random;
  * Real QuestionSource implementation (R2). Loads the full question bank via
  * QuestionBankLoader once, then on every buildSession() call:
  *
- *  1) Groups the bank by Bloom stage, then by module within each stage.
- *  2) For each stage, picks the required number of questions one at a time,
- *     choosing UNIFORMLY among whichever modules still have unused
- *     questions left for that stage. This means a module with more total
- *     questions is never more likely to get picked than a module with
- *     fewer -- every module gets an equal chance on every single pick
- *     (Assignment Guide #1 item 1d).
- *  3) Shuffles each selected question's choices in place.
+ * 1) Groups the bank by Bloom stage, then by module within each stage.
+ * 2) For each stage, picks the required number of questions one at a time,
+ * choosing UNIFORMLY among whichever modules still have unused
+ * questions left for that stage. This means a module with more total
+ * questions is never more likely to get picked than a module with
+ * fewer -- every module gets an equal chance on every single pick
+ * (Assignment Guide #1 item 1d).
+ * 3) Shuffles each selected question's choices in place.
  *
  * Ordering of the returned list follows ascending Bloom stage, per
  * QuestionSource's contract.
  */
 public class CsvQuestionSource implements QuestionSource {
 
-    /** Bloom stage -> how many questions from that stage go into one session. Must sum to 15. */
+    /**
+     * Bloom stage -> how many questions from that stage go into one session. Must
+     * sum to 15.
+     */
     private static final Map<String, Integer> QUESTIONS_PER_STAGE = new LinkedHashMap<>();
     static {
         QUESTIONS_PER_STAGE.put("Remember", 3);
@@ -64,8 +67,7 @@ public class CsvQuestionSource implements QuestionSource {
             String stage = stageEntry.getKey();
             int countNeeded = stageEntry.getValue();
 
-            Map<String, List<Question>> byModule =
-                    byStageThenModule.getOrDefault(stage, Map.of());
+            Map<String, List<Question>> byModule = byStageThenModule.getOrDefault(stage, Map.of());
             session.addAll(pickEquallyAcrossModules(stage, byModule, countNeeded));
         }
 
@@ -77,8 +79,8 @@ public class CsvQuestionSource implements QuestionSource {
         Map<String, Map<String, List<Question>>> result = new LinkedHashMap<>();
         for (Question q : questions) {
             result.computeIfAbsent(q.getBloom(), k -> new LinkedHashMap<>())
-                  .computeIfAbsent(q.getModule(), k -> new ArrayList<>())
-                  .add(q);
+                    .computeIfAbsent(q.getModule(), k -> new ArrayList<>())
+                    .add(q);
         }
         return result;
     }
