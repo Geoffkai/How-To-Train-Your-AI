@@ -1,6 +1,7 @@
 package com.howtotrainyourai.core;
 
 import com.howtotrainyourai.gui.CardPanel;
+import com.howtotrainyourai.gui.SplashPanel;
 import com.howtotrainyourai.gui.MainMenuPanel;
 import com.howtotrainyourai.gui.PlayPanel;
 import com.howtotrainyourai.gui.SettingsPanel;
@@ -20,10 +21,13 @@ public class Main {
 
         CardPanel cardPanel = new CardPanel();
 
+        cardPanel.addScreen(CardPanel.SPLASH, new SplashPanel(cardPanel));
         cardPanel.addScreen(CardPanel.MENU, new MainMenuPanel(cardPanel));
         cardPanel.addScreen(CardPanel.PLAY, new PlayPanel(cardPanel));
         cardPanel.addScreen(CardPanel.TUTORIAL, new TutorialPanel(cardPanel));
         cardPanel.addScreen(CardPanel.SETTINGS, new SettingsPanel(cardPanel));
+
+        cardPanel.showScreen(CardPanel.SPLASH);
 
         frame.add(cardPanel);
 
@@ -32,7 +36,5 @@ public class Main {
         frame.setResizable(false);
         frame.setUndecorated(true);
         frame.setVisible(true);
-
-        cardPanel.showScreen(CardPanel.MENU);
     }
 }
