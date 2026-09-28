@@ -14,10 +14,10 @@ import java.util.Set;
  * Real GameEngine implementation. Tracks one session's state and applies the
  * scoring/checkpoint/capability rules from CONTEXT.md 2.
  *
- * Depends on QuestionSource by INTERFACE, not on FakeQuestionSource or
- * CsvQuestionSource by name -- whoever constructs this decides which one to
- * pass in. That's what lets you test against FakeQuestionSource today and
- * a GUI wire up CsvQuestionSource tomorrow without this class changing.
+ * Depends on QuestionSource by INTERFACE, not on CsvQuestionSource by name --
+ * whoever constructs this decides which one to pass in. That's what lets a
+ * test drive a controlled bank while the GUI runs the real CSV, without this
+ * class changing, and what keeps `engine` from importing `data`.
  *
  * Lifelines (CONTEXT.md §2.4): Binary Choice and Predict are aids the
  * player asks for BEFORE answering, via useLifeline(). Override is the only

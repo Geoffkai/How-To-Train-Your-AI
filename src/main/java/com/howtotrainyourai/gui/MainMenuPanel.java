@@ -29,7 +29,9 @@ public class MainMenuPanel extends JPanel {
         JButton settingsButton = createMenuButton("Settings");
         JButton exitButton = createMenuButton("Exit");
 
-        playButton.addActionListener(e -> cardPanel.showScreen(CardPanel.PLAY));
+        // Play goes to setup first -- a session can't start without a trainer name
+        // and a protocol, which is what SetupPanel collects.
+        playButton.addActionListener(e -> cardPanel.showScreen(CardPanel.SETUP));
         settingsButton.addActionListener(e -> cardPanel.showScreen(CardPanel.SETTINGS));
         tutorialButton.addActionListener(e -> cardPanel.showScreen(CardPanel.TUTORIAL));
         exitButton.addActionListener(e -> System.exit(0));
