@@ -1,28 +1,39 @@
 package com.howtotrainyourai.engine;
 
+import com.howtotrainyourai.model.Choice;
 import com.howtotrainyourai.model.Question;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 
 /**
  * Real GameEngine implementation. Tracks one session's state and applies the
- * scoring/checkpoint/capability rules from CONTEXT.md §2.
+ * scoring/checkpoint/capability rules from CONTEXT.md 2.
  *
  * Depends on QuestionSource by INTERFACE, not on FakeQuestionSource or
  * CsvQuestionSource by name -- whoever constructs this decides which one to
  * pass in. That's what lets you test against FakeQuestionSource today and
  * a GUI wire up CsvQuestionSource tomorrow without this class changing.
  *
- * ASSUMPTION (revisit later): lifelines aren't wired up yet -- there's no
- * useLifeline()-style method on GameEngine's interface. For now, treat every
- * wrong answer as ending the session (as if the player always has zero
- * lifelines left). That matches end condition (a) in CONTEXT.md §2.5 exactly
- * once lifelines don't exist yet -- expand this once GameEngine grows a real
- * lifeline method.
+ * Lifelines (CONTEXT.md §2.4): Binary Choice and Predict are aids the
+ * player asks for BEFORE answering, via useLifeline(). Override is the only
+ * one that can rescue a wrong answer, so it isn't asked for -- the first
+ * wrong answer while it's still available spends it automatically and the
+ * player retries the same question. A wrong answer with Override gone (or
+ * never allowed, as on High Risk) ends the session: end condition (a) in
+ * CONTEXT.md §2.5.
  */
 public class GameEngineImpl implements GameEngine {
 
-    // question number (1-based) that completes a Bloom stage -> capability it restores
+    // Predict names the right answer this often (plan v2's Week 4 tuning note)
+    private static final double PREDICT_ACCURACY = 0.7;
+
+    // question number (1-based) that completes a Bloom stage -> capability it
+    // restores
     private static final Map<Integer, String> CAPABILITY_UNLOCKS = Map.of(
             3, "Memory",
             5, "Understanding",
@@ -32,6 +43,7 @@ public class GameEngineImpl implements GameEngine {
             15, "Synthesize");
 
     private final QuestionSource questionSource;
+    private final Random random;
     private int tokenTotal;
     private int questionIndex;
     private boolean isRunning;
@@ -40,9 +52,16 @@ public class GameEngineImpl implements GameEngine {
     private int securedScore; // tokenTotal to roll back to on failure
     private int securedIndex; // questionIndex to roll back to on failure
     private String trainerName;
+    private final Set<Lifeline> remainingLifelines = EnumSet.noneOf(Lifeline.class);
 
     public GameEngineImpl(QuestionSource questionSource) {
+        this(questionSource, new Random());
+    }
+
+    /** Lets a test pass a seeded Random so lifeline picks are repeatable. */
+    public GameEngineImpl(QuestionSource questionSource, Random random) {
         this.questionSource = questionSource;
+        this.random = random;
     }
 
     @Override
@@ -57,7 +76,53 @@ public class GameEngineImpl implements GameEngine {
         this.tokenTotal = 0;
         this.securedScore = 0;
         this.securedIndex = 0;
+        this.remainingLifelines.clear();
+        this.remainingLifelines.addAll(protocol.getAllowedLifelines());
         this.isRunning = true;
+    }
+
+    @Override
+    public Protocol getProtocol() {
+        return protocol;
+    }
+
+    @Override
+    public Set<Lifeline> getRemainingLifelines() {
+        return Collections.unmodifiableSet(EnumSet.copyOf(remainingLifelines));
+    }
+
+    @Override
+    public LifelineResult useLifeline(Lifeline lifeline) {
+        requireActiveSession();
+        if (lifeline == Lifeline.OVERRIDE) {
+            throw new IllegalArgumentException("Override triggers automatically on a wrong answer");
+        }
+        if (!remainingLifelines.remove(lifeline)) {
+            throw new IllegalStateException(lifeline + " is not available");
+        }
+
+        Question question = currentQuestion();
+        List<String> wrongIds = new ArrayList<>();
+        String correctId = null;
+        for (Choice choice : question.getChoices()) {
+            if (question.isCorrect(choice.getChoiceId())) {
+                correctId = choice.getChoiceId();
+            } else {
+                wrongIds.add(choice.getChoiceId());
+            }
+        }
+        Collections.shuffle(wrongIds, random);
+
+        if (lifeline == Lifeline.BINARY_CHOICE) {
+            return LifelineResult.binaryChoice(wrongIds.subList(0, 2));
+        }
+
+        // PREDICT: right ~70% of the time, and the stated confidence runs
+        // higher when it's right, so players can learn to read the number.
+        if (random.nextDouble() < PREDICT_ACCURACY) {
+            return LifelineResult.predict(correctId, 65 + random.nextInt(31)); // 65-95
+        }
+        return LifelineResult.predict(wrongIds.get(0), 35 + random.nextInt(36)); // 35-70
     }
 
     @Override
@@ -94,6 +159,10 @@ public class GameEngineImpl implements GameEngine {
 
             isGameOver = questionNumber == ScoreLadder.TOTAL_QUESTIONS;
             questionIndex++;
+        } else if (remainingLifelines.remove(Lifeline.OVERRIDE)) {
+            // Override absorbs this miss: nothing lost, nothing advanced,
+            // the same question stays current for one more pick.
+            return new TurnResult(false, 0, tokenTotal, false, null, false, true);
         } else {
             isCorrect = false;
             tokensAwarded = 0;
