@@ -151,9 +151,13 @@ public class TerminalGameLoop {
                 continue;
             }
 
-            int fromLetter = input.charAt(0) - 'A';
-            if (fromLetter >= 0 && fromLetter < choiceCount) {
-                return fromLetter;
+            // Only a lone letter counts -- "APPLE" or "B2" must not sneak
+            // through as A/B just because of their first character.
+            if (input.length() == 1) {
+                int fromLetter = input.charAt(0) - 'A';
+                if (fromLetter >= 0 && fromLetter < choiceCount) {
+                    return fromLetter;
+                }
             }
 
             try {

@@ -10,21 +10,25 @@ import java.util.List;
  * - which question number(s) are checkpoints
  * - whether there's a per-question timer
  *
- * (Score multiplier isn't a field here -- ScoreLadder.HIGH_RISK already has
- * the x2 baked into its numbers, so there's nothing for Protocol to apply.)
+ * (Score multiplier isn't a field here -- ScoreLadder's High Risk table
+ * already has the x2 baked into its numbers, so there's nothing for Protocol
+ * to apply.)
+ *
+ * Every field is immutable (List.of), so no caller can change a protocol's
+ * rules at runtime -- an enum constant is shared by every session.
  */
 public enum Protocol {
     STANDARD(List.of(Lifeline.BINARY_CHOICE, Lifeline.PREDICT, Lifeline.OVERRIDE),
-            new int[] { 5, 10 }, false),
-    HIGH_RISK(List.of(Lifeline.BINARY_CHOICE, Lifeline.PREDICT), new int[] { 5 }, true);
+            List.of(5, 10), false),
+    HIGH_RISK(List.of(Lifeline.BINARY_CHOICE, Lifeline.PREDICT), List.of(5), true);
 
     private final List<Lifeline> allowedLifelines;
-    private final int[] checkpointQuestion;
+    private final List<Integer> checkpointQuestions;
     private final boolean hasTimer;
 
-    Protocol(List<Lifeline> allowedLifelines, int[] checkpointQuestion, boolean hasTimer) {
+    Protocol(List<Lifeline> allowedLifelines, List<Integer> checkpointQuestions, boolean hasTimer) {
         this.allowedLifelines = allowedLifelines;
-        this.checkpointQuestion = checkpointQuestion;
+        this.checkpointQuestions = checkpointQuestions;
         this.hasTimer = hasTimer;
     }
 
@@ -32,8 +36,9 @@ public enum Protocol {
         return allowedLifelines;
     }
 
-    public int[] getCheckpointQuestion() {
-        return checkpointQuestion;
+    /** True if answering this question number (1-based) correctly secures the score. */
+    public boolean isCheckpoint(int questionNumber) {
+        return checkpointQuestions.contains(questionNumber);
     }
 
     public boolean hasTimer() {

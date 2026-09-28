@@ -1,8 +1,8 @@
 package com.howtotrainyourai.engine;
 
 import com.howtotrainyourai.model.Question;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Real GameEngine implementation. Tracks one session's state and applies the
@@ -21,6 +21,15 @@ import java.util.List;
  * lifeline method.
  */
 public class GameEngineImpl implements GameEngine {
+
+    // question number (1-based) that completes a Bloom stage -> capability it restores
+    private static final Map<Integer, String> CAPABILITY_UNLOCKS = Map.of(
+            3, "Memory",
+            5, "Understanding",
+            8, "Application",
+            10, "Analysis",
+            13, "Evaluation",
+            15, "Synthesize");
 
     private final QuestionSource questionSource;
     private int tokenTotal;
@@ -60,48 +69,30 @@ public class GameEngineImpl implements GameEngine {
     @Override
     public TurnResult submitAnswer(String choiceId) {
         requireActiveSession();
-        HashMap<Integer, String> capabilityMap = new HashMap<>();
-        capabilityMap.put(3, "Memory");
-        capabilityMap.put(5, "Understanding");
-        capabilityMap.put(8, "Application");
-        capabilityMap.put(10, "Analysis");
-        capabilityMap.put(13, "Evaluation");
-        capabilityMap.put(15, "Synthesize");
         boolean capabilityUnlocked;
         boolean isGameOver;
         boolean isCorrect;
         String capabilityName;
         int tokensAwarded;
 
-        // TODO 4: this is the core of the engine. Work through it in this
-        // order -- write each piece, and consider testing it before moving
-        // to the next:
         Question currentQuestion = currentQuestion();
+        int questionNumber = questionIndex + 1;
 
         if (currentQuestion.isCorrect(choiceId)) {
             isCorrect = true;
 
-            tokensAwarded = protocol == Protocol.STANDARD ? ScoreLadder.STANDARD[questionIndex]
-                    : ScoreLadder.HIGH_RISK[questionIndex];
+            tokensAwarded = ScoreLadder.tokensFor(protocol, questionNumber);
             tokenTotal += tokensAwarded;
 
-            if (capabilityMap.containsKey(questionIndex + 1)) {
-                capabilityUnlocked = true;
-                capabilityName = capabilityMap.get(questionIndex + 1);
-            } else {
-                capabilityUnlocked = false;
-                capabilityName = null;
+            capabilityName = CAPABILITY_UNLOCKS.get(questionNumber);
+            capabilityUnlocked = capabilityName != null;
+
+            if (protocol.isCheckpoint(questionNumber)) {
+                securedScore = tokenTotal;
+                securedIndex = questionIndex;
             }
 
-            for (int index : protocol.getCheckpointQuestion()) {
-                if ((questionIndex + 1) == index) {
-                    securedScore = tokenTotal;
-                    securedIndex = questionIndex;
-                    break;
-                }
-            }
-
-            isGameOver = (questionIndex + 1) == 15;
+            isGameOver = questionNumber == ScoreLadder.TOTAL_QUESTIONS;
             questionIndex++;
         } else {
             isCorrect = false;
