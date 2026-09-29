@@ -234,7 +234,6 @@ public class PlayPanel extends JPanel implements GameScreen {
     /**
      * Starts rendering a session that SetupPanel has already started on the engine.
      */
-
     @Override
     public void startGame(GameEngine engine) {
         this.engine = engine;

@@ -23,7 +23,7 @@ import java.util.List;
 // working fallback until this is swapped in at Main.java after the oct 4 playthrough.
 //
 // flat shapes only, no gradients/textures. arm sweep is a later phase, not here.
-public class ScenePanel extends JPanel {
+public class ScenePanel extends JPanel implements GameScreen {
 
     private static final int TOTAL_QUESTIONS = 15;
     private static final double LOGICAL_W = 1600;
@@ -214,6 +214,7 @@ public class ScenePanel extends JPanel {
     }
 
     // starts rendering a session that's already been started on engine
+    @Override
     public void startGame(GameEngine engine) {
         this.engine = engine;
         this.questionIndex = 0;
