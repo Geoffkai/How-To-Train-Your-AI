@@ -20,25 +20,18 @@ import java.util.Scanner;
  * does the identical mapping: button #2 clicked -> choices.get(1) ->
  * getChoiceId() -> submitAnswer(...).
  *
- * Flip USE_FAKE_DATA to true for a controlled test run -- e.g. forcing a
- * wrong answer at a specific question number, to verify checkpoint
- * rollback (see R1_Engine_Weekly_Plan.md's Week 2 "Done when": force-fail
- * at Q4, Q6, Q11, confirm the score falls back to the right checkpoint
- * each time). FakeQuestionSource gives fixed, known questions in a fixed
- * order, so you know exactly which question number you're answering.
- * Leave it false for normal play against the real question bank.
+ * Always runs against the real question bank. To exercise the rules against
+ * a controlled set instead -- e.g. force-failing at Q4, Q6 and Q11 to confirm
+ * checkpoint rollback, per R1_Engine_Weekly_Plan.md's Week 2 "Done when" --
+ * pass a purpose-built QuestionSource to GameEngineImpl from a test rather
+ * than switching a flag in here.
  */
 public class TerminalGameLoop {
 
-    private static final boolean USE_FAKE_DATA = false;
-    private static final int TOTAL_QUESTIONS = 15;
+    private static final int TOTAL_QUESTIONS = ScoreLadder.TOTAL_QUESTIONS;
 
     public static void main(String[] args) {
-        QuestionSource questionSource = USE_FAKE_DATA
-                ? new FakeQuestionSource()
-                : new CsvQuestionSource();
-
-        GameEngine engine = new GameEngineImpl(questionSource);
+        GameEngine engine = new GameEngineImpl(new CsvQuestionSource());
         Scanner scanner = new Scanner(System.in);
 
         System.out.print("Enter Trainer Name: ");
@@ -81,6 +74,16 @@ public class TerminalGameLoop {
 
             System.out.println();
             System.out.println("Your answer: " + label(pickedIndex) + ") " + picked.getText());
+
+            if (result.isRetry()) {
+                // Override absorbed the miss: the engine did NOT advance, so the
+                // same question is still current and questionNumber must not move.
+                // No explanation either -- printing it here would hand the player
+                // the answer they're about to re-attempt.
+                System.out.println("Result: INCORRECT -- but OVERRIDE ENGAGED.");
+                System.out.println("No tokens lost. Same question, one more pick.");
+                continue;
+            }
 
             if (result.isCorrect()) {
                 System.out.println("Result: CORRECT   +" + result.getTokensAwarded()
@@ -128,7 +131,9 @@ public class TerminalGameLoop {
             System.out.print("Your choice (1-2): ");
 
             String input = scanner.nextLine().trim();
-            if (input.equals("1")) {
+            if (input.equals(
+
+                    "1")) {
                 return Protocol.STANDARD;
             }
             if (input.equals("2")) {
@@ -199,9 +204,3 @@ public class TerminalGameLoop {
     }
 
 }
-
-    
-
-    
-
-    
