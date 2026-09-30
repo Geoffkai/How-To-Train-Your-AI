@@ -5,6 +5,7 @@ import javax.swing.*;
 
 public class CardPanel extends JPanel {
 
+    public static final String SPLASH = "SPLASH";
     public static final String MENU = "MENU";
     public static final String PLAY = "PLAY";
     public static final String SETTINGS = "SETTINGS";

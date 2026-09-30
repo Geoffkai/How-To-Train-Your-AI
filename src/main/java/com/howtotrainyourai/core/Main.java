@@ -4,6 +4,7 @@ import com.howtotrainyourai.gui.CardPanel;
 import com.howtotrainyourai.gui.MainMenuPanel;
 import com.howtotrainyourai.gui.PlayPanel;
 import com.howtotrainyourai.gui.SettingsPanel;
+import com.howtotrainyourai.gui.SplashScreenPanel;
 import com.howtotrainyourai.gui.TutorialPanel;
 import java.awt.*;
 import javax.swing.*;
@@ -20,6 +21,8 @@ public class Main {
 
         CardPanel cardPanel = new CardPanel();
 
+        // Register all screens
+        cardPanel.addScreen(CardPanel.SPLASH, new SplashScreenPanel(cardPanel));
         cardPanel.addScreen(CardPanel.MENU, new MainMenuPanel(cardPanel));
         cardPanel.addScreen(CardPanel.PLAY, new PlayPanel(cardPanel));
         cardPanel.addScreen(CardPanel.TUTORIAL, new TutorialPanel(cardPanel));
@@ -33,6 +36,7 @@ public class Main {
         frame.setUndecorated(true);
         frame.setVisible(true);
 
-        cardPanel.showScreen(CardPanel.MENU);
+        // Boot directly into the splash screen
+        cardPanel.showScreen(CardPanel.SPLASH);
     }
 }
