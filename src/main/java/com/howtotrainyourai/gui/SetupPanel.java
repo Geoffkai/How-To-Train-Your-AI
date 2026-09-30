@@ -8,7 +8,8 @@ import javax.swing.*;
 
 /**
  * Collects the two things GameEngine.startSession() needs -- trainer name and
- * protocol -- then starts the session and hands the live engine to PlayPanel.
+ * protocol -- then starts the session and hands the live engine to the question
+ * screen.
  *
  * This is the GUI's equivalent of TerminalGameLoop's opening prompts. It's also
  * the only screen that builds an engine, which keeps session creation in one
@@ -19,14 +20,14 @@ import javax.swing.*;
 public class SetupPanel extends JPanel {
 
     private final CardPanel cardPanel;
-    private final PlayPanel playPanel;
+    private final GameScreen questionScreen;
     private final JTextField nameField;
     private final JRadioButton standardButton;
     private final JRadioButton highRiskButton;
 
-    public SetupPanel(CardPanel cardPanel, PlayPanel playPanel) {
+    public SetupPanel(CardPanel cardPanel, GameScreen questionScreen) {
         this.cardPanel = cardPanel;
-        this.playPanel = playPanel;
+        this.questionScreen = questionScreen;
 
         setBackground(Color.WHITE);
         setLayout(new GridBagLayout());
@@ -133,7 +134,7 @@ public class SetupPanel extends JPanel {
         // Building the engine reads the CSV bank, and startSession() builds the
         // 15-question set from it -- either can throw if the bank is missing or
         // too thin for a full session. Stay on this screen and say so, rather
-        // than pushing a dead PlayPanel in front of the player.
+        // than pushing a dead question screen in front of the player.
         GameEngine engine;
         try {
             engine = GameEngineFactory.createDefault();
@@ -145,7 +146,7 @@ public class SetupPanel extends JPanel {
             return;
         }
 
-        playPanel.startGame(engine);
+        questionScreen.startGame(engine);
         cardPanel.showScreen(CardPanel.PLAY);
     }
 

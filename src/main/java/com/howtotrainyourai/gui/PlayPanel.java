@@ -25,7 +25,7 @@ import javax.swing.*;
 // two things here are easy to get wrong and are commented where they happen:
 // a choice's display POSITION is not its choiceId (the bank shuffles), and an Override
 // retry means the engine did NOT advance.
-public class PlayPanel extends JPanel {
+public class PlayPanel extends JPanel implements GameScreen {
 
     private static final int TOTAL_QUESTIONS = 15;
 
@@ -71,7 +71,8 @@ public class PlayPanel extends JPanel {
     private List<Choice> currentChoices = List.of();
 
     // choiceIds Binary Choice removed from the CURRENT question. Cleared when the
-    // question changes, kept across an Override retry (the lifeline was already spent).
+    // question changes, kept across an Override retry (the lifeline was already
+    // spent).
     private final Set<String> removedChoiceIds = new HashSet<>();
 
     public PlayPanel(CardPanel cardPanel) {
@@ -230,7 +231,11 @@ public class PlayPanel extends JPanel {
         return button;
     }
 
-    /** Starts rendering a session that SetupPanel has already started on the engine. */
+    /**
+     * Starts rendering a session that SetupPanel has already started on the engine.
+     */
+
+    @Override
     public void startGame(GameEngine engine) {
         this.engine = engine;
         this.questionIndex = 0;
