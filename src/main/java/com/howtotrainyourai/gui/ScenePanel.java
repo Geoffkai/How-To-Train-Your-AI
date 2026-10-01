@@ -1,9 +1,6 @@
 package com.howtotrainyourai.gui;
 
-import com.howtotrainyourai.engine.FakeQuestionSource;
 import com.howtotrainyourai.engine.GameEngine;
-import com.howtotrainyourai.engine.Protocol;
-import com.howtotrainyourai.engine.SessionResult;
 import com.howtotrainyourai.engine.TurnResult;
 import com.howtotrainyourai.model.Choice;
 import com.howtotrainyourai.model.Question;
@@ -498,56 +495,5 @@ public class ScenePanel extends JPanel implements GameScreen {
             g2.drawString(paperLines.get(i), (int) TELETYPE_X + 10, y);
             y -= 14;
         }
-    }
-
-    // manual visual check only, click through with a stub GameEngine, same as PlayPanel's.
-    public static void main(String[] args) throws Exception {
-        // aqua (macos) ignores custom JButton colors/borders otherwise
-        UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
-
-        List<Question> questions = new FakeQuestionSource().buildSession();
-
-        GameEngine demoEngine = new GameEngine() {
-            int index = 0;
-            int total = 0;
-
-            @Override
-            public void startSession(String trainerName, Protocol protocol) {
-                index = 0;
-                total = 0;
-            }
-
-            @Override
-            public Question currentQuestion() {
-                return questions.get(index);
-            }
-
-            @Override
-            public TurnResult submitAnswer(String choiceId) {
-                Question question = questions.get(index);
-                boolean correct = question.isCorrect(choiceId);
-                int tokens = correct ? (index + 1) * 10 : 0;
-                total += tokens;
-                index++;
-                boolean gameOver = !correct || index >= questions.size();
-                boolean capabilityUnlocked = correct
-                        && (index == 3 || index == 5 || index == 8 || index == 10 || index == 13 || index == 15);
-                return new TurnResult(correct, tokens, total, capabilityUnlocked,
-                        capabilityUnlocked ? "Capability " + index : null, gameOver);
-            }
-
-            @Override
-            public SessionResult endSession() {
-                return new SessionResult();
-            }
-        };
-
-        JFrame frame = new JFrame("ScenePanel demo");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        ScenePanel panel = new ScenePanel(new CardPanel());
-        frame.add(panel);
-        frame.setSize(1600, 1000);
-        frame.setVisible(true);
-        panel.startGame(demoEngine);
     }
 }
