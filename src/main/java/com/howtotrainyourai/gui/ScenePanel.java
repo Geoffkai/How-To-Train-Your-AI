@@ -45,6 +45,9 @@ public class ScenePanel extends JPanel implements GameScreen {
     // mockup .bay/.cell background (#0a0706/#141210/#1b211f/#0f1312 are all close
     // near-blacks in the mockup; one well color covers all of them here)
     private static final Color SHELF_WELL = Color.decode("#0a0706");
+    // mockup .lmark.failed / .lmark.latched literal colors (not css vars there either)
+    private static final Color MARKER_FAIL = Color.decode("#c97a62");
+    private static final Color MARKER_LATCH = Color.decode("#f4e6a8");
 
     private static final Font FONT_LADDER = new Font(Font.MONOSPACED, Font.BOLD, 11);
     private static final Font FONT_PROMPT = new Font(Font.MONOSPACED, Font.BOLD, 20);
@@ -60,6 +63,9 @@ public class ScenePanel extends JPanel implements GameScreen {
     private static final double LAMPS_X = 240, LAMPS_Y = 52, LAMPS_W = 1312, LAMP_W = 144, LAMP_H = 18;
     private static final double STATION_X = 168, STATION_Y = 105, STATION_W = 1216, STATION_H = 630;
     private static final double LADDER_X = 224, LADDER_Y = 134, LADDER_W = 912, LADDER_H = 37, LADDER_GAP = 4.8;
+    private static final double MARKER_H = 18, MARKER_GAP = 6;
+    private static final int MARKER_ANIM_MS = 450;
+    private static final int MARKER_ROLLBACK_MS = 900;
     private static final double BOARD_X = 208, BOARD_Y = 205, BOARD_W = 1136, BOARD_H = 440;
     private static final double LEDGE_X = 195, LEDGE_Y = 673, LEDGE_W = 1162, LEDGE_H = 24;
     private static final double MONITOR_X = 1288, MONITOR_Y = 610, MONITOR_W = 272, MONITOR_H = 270;
@@ -115,6 +121,15 @@ public class ScenePanel extends JPanel implements GameScreen {
     private GameEngine engine;
     private int questionIndex;
     private boolean sessionOver;
+    // brass clip that tracks progress on the ladder, see paintLadderMarker()
+    private double markerPos;
+    private double markerAnimStart;
+    private double markerAnimFrom;
+    private double markerTarget;
+    private boolean markerFailed;
+    private boolean markerLatched;
+    private Timer markerAnimTimer;
+    private Timer markerRollbackTimer;
     // the board only pulls a fresh question on showQuestion() (start / Next click),
     // never mid-turn, so the just-answered prompt stays up until the player advances
     private Question displayedQuestion;
@@ -219,6 +234,16 @@ public class ScenePanel extends JPanel implements GameScreen {
         java.util.Arrays.fill(ladderOutcomes, null);
         paperLines.clear();
         paperGood.clear();
+        if (markerAnimTimer != null) {
+            markerAnimTimer.stop();
+        }
+        if (markerRollbackTimer != null) {
+            markerRollbackTimer.stop();
+        }
+        markerPos = 0;
+        markerTarget = 0;
+        markerFailed = false;
+        markerLatched = false;
         print("BAY 04 LINK OPEN", true);
         print("AWAITING HUMAN VERIFIER", true);
         showQuestion();
@@ -266,6 +291,7 @@ public class ScenePanel extends JPanel implements GameScreen {
         }
         switchButton.setEnabled(false);
         engine.endSession();
+        markerLatched = !markerFailed;
         print("BUNDLE WRITTEN TO TAPE", true);
         print("LINK CLOSED", true);
         nextButton.setText("BACK TO MENU");
@@ -283,6 +309,7 @@ public class ScenePanel extends JPanel implements GameScreen {
             keyButton.setEnabled(false);
         }
 
+        int answeredRung = questionIndex;
         TurnResult result = engine.submitAnswer(choiceId);
         ladderOutcomes[questionIndex] = result.isCorrect() ? TAPE_GREEN : TAPE_RED;
         questionIndex++;
@@ -293,9 +320,14 @@ public class ScenePanel extends JPanel implements GameScreen {
             if (result.isCapabilityUnlocked()) {
                 print(result.getCapabilityName().toUpperCase() + " RESTORED", true);
             }
+            markerFailed = false;
+            animateMarkerTo(Math.min(questionIndex, TOTAL_QUESTIONS - 1));
         } else {
             print("P" + questionIndex + " REJECTED", false);
             print("UNCOMMITTED UNITS DISCARDED", false);
+            markerFailed = true;
+            animateMarkerTo(answeredRung);
+            scheduleMarkerRollback(answeredRung);
         }
 
         if (sessionOver) {
@@ -434,6 +466,69 @@ public class ScenePanel extends JPanel implements GameScreen {
             g2.setColor(fill);
             g2.fillRect((int) x, (int) LADDER_Y, (int) rungW, (int) LADDER_H);
         }
+        paintLadderMarker(g2, rungW);
+    }
+
+    // brass clip that slides to the current rung, reddens on a failed rung, then
+    // slides back to the last secured checkpoint. ports restoration-bay-fold-claude-
+    // table.html's moveMarker()/lmark, not re-derived.
+    private void paintLadderMarker(Graphics2D g2, double rungW) {
+        double x = LADDER_X + markerPos * (rungW + LADDER_GAP);
+        double y = LADDER_Y - MARKER_GAP - MARKER_H;
+        Polygon marker = new Polygon();
+        marker.addPoint((int) x, (int) y);
+        marker.addPoint((int) (x + rungW), (int) y);
+        marker.addPoint((int) (x + rungW), (int) (y + MARKER_H * 0.55));
+        marker.addPoint((int) (x + rungW / 2), (int) (y + MARKER_H));
+        marker.addPoint((int) x, (int) (y + MARKER_H * 0.55));
+        g2.setColor(markerFailed ? MARKER_FAIL : markerLatched ? MARKER_LATCH : BRASS_LIT);
+        g2.fillPolygon(marker);
+    }
+
+    // eases markerPos from its current value to target over MARKER_ANIM_MS
+    private void animateMarkerTo(double target) {
+        if (markerAnimTimer != null) {
+            markerAnimTimer.stop();
+        }
+        markerAnimFrom = markerPos;
+        markerTarget = target;
+        markerAnimStart = System.currentTimeMillis();
+        markerAnimTimer = new Timer(16, e -> {
+            double elapsed = System.currentTimeMillis() - markerAnimStart;
+            double f = Math.min(1, elapsed / MARKER_ANIM_MS);
+            double eased = f * f * (3 - 2 * f);
+            markerPos = markerAnimFrom + (markerTarget - markerAnimFrom) * eased;
+            repaint();
+            if (f >= 1) {
+                markerAnimTimer.stop();
+            }
+        });
+        markerAnimTimer.start();
+    }
+
+    // 900ms after a failed rung, slide back to the last secured checkpoint
+    private void scheduleMarkerRollback(int failedRung) {
+        if (markerRollbackTimer != null) {
+            markerRollbackTimer.stop();
+        }
+        markerRollbackTimer = new Timer(MARKER_ROLLBACK_MS, e -> {
+            markerFailed = false;
+            animateMarkerTo(lastSecuredRung(failedRung));
+        });
+        markerRollbackTimer.setRepeats(false);
+        markerRollbackTimer.start();
+    }
+
+    // highest checkpoint question (CONTEXT.md 2.2, Protocol.isCheckpoint) already
+    // passed before the failed rung, as a 0-based ladder index; 0 if none secured yet
+    private int lastSecuredRung(int failedRung) {
+        int lastCheckpoint = 0;
+        for (int questionNumber = 1; questionNumber <= failedRung; questionNumber++) {
+            if (engine.getProtocol().isCheckpoint(questionNumber)) {
+                lastCheckpoint = questionNumber;
+            }
+        }
+        return lastCheckpoint > 0 ? lastCheckpoint - 1 : 0;
     }
 
     private void paintBoardContent(Graphics2D g2) {
