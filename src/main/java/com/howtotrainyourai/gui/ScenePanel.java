@@ -1,6 +1,8 @@
 package com.howtotrainyourai.gui;
 
 import com.howtotrainyourai.engine.GameEngine;
+import com.howtotrainyourai.engine.Lifeline;
+import com.howtotrainyourai.engine.LifelineResult;
 import com.howtotrainyourai.engine.TurnResult;
 import com.howtotrainyourai.model.Choice;
 import com.howtotrainyourai.model.Question;
@@ -13,7 +15,9 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.GeneralPath;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 // blocking pass for the vintage ai lab scene, see
@@ -57,6 +61,12 @@ public class ScenePanel extends JPanel implements GameScreen {
     // capability unlock order, matches GameEngineImpl.CAPABILITY_UNLOCKS (Q3/5/8/10/13/15)
     private static final String[] CAPABILITY_NAMES = {
             "MEMORY", "UNDERSTANDING", "APPLICATION", "ANALYSIS", "EVALUATION", "SYNTHESIZE" };
+
+    // lifelineButtons[i] <-> this enum, same order as the mockup's BINARY/PREDICT/
+    // OVERRIDE cells. OVERRIDE is display-only, same as PlayPanel.LIFELINE_ORDER --
+    // useLifeline(OVERRIDE) throws by design, the engine spends it on its own.
+    private static final Lifeline[] LIFELINE_ORDER = {
+            Lifeline.BINARY_CHOICE, Lifeline.PREDICT, Lifeline.OVERRIDE };
 
     // mockup --phosphor / --phosphor-warn, plus the dvd-bounce TINTS array
     private static final Color PHOSPHOR = Color.decode("#86e8a2");
@@ -243,6 +253,12 @@ public class ScenePanel extends JPanel implements GameScreen {
     private String displayedAnsweredChoiceId;
     private String displayedCorrectChoiceId;
     private boolean displayedWasCorrect;
+    // lifeline effects on the CURRENT question only -- cleared in showQuestion(),
+    // same convention as PlayPanel.removedChoiceIds (each lifeline is spent once
+    // per session, but what it revealed only applies to the question it was used on)
+    private final Set<String> removedChoiceIds = new HashSet<>();
+    private String predictedChoiceId;
+    private int predictedConfidence;
     private double scale = 1;
     private double offsetX, offsetY;
 
@@ -254,8 +270,14 @@ public class ScenePanel extends JPanel implements GameScreen {
         String[] lifelineLabels = { "BINARY", "PREDICT", "OVERRIDE" };
         for (int i = 0; i < lifelineButtons.length; i++) {
             TaperedButton button = new TaperedButton(lifelineLabels[i], FONT_LIFELINE, BRASS, PAPER);
-            final int lifelineIndex = i;
-            button.addActionListener(e -> pullLifeline(lifelineLabels[lifelineIndex]));
+            Lifeline lifeline = LIFELINE_ORDER[i];
+            if (lifeline == Lifeline.OVERRIDE) {
+                // spent automatically on the first wrong answer, never clicked --
+                // same treatment as PlayPanel's "OV" button
+                button.setEnabled(false);
+            } else {
+                button.addActionListener(e -> pullLifeline(lifeline));
+            }
             lifelineButtons[i] = button;
             add(button);
         }
@@ -403,13 +425,13 @@ public class ScenePanel extends JPanel implements GameScreen {
     private void showQuestion() {
         displayedQuestion = engine.currentQuestion();
         displayedIndex = questionIndex;
+        removedChoiceIds.clear();
+        predictedChoiceId = null;
         for (JButton keyButton : keyButtons) {
             keyButton.setEnabled(true);
             keyButton.setBackground(BRASS_LIT);
         }
-        for (JButton lifelineButton : lifelineButtons) {
-            lifelineButton.setEnabled(true);
-        }
+        refreshLifelines();
         switchButton.setEnabled(true);
         nextButton.setText("NEXT PROBE");
         nextButton.setEnabled(false);
@@ -422,19 +444,58 @@ public class ScenePanel extends JPanel implements GameScreen {
         relayout();
     }
 
-    private void pullLifeline(String label) {
-        JButton source = null;
-        for (JButton b : lifelineButtons) {
-            if (b.getText().equals(label)) {
-                source = b;
-            }
+    /**
+     * Enabled state comes from the engine's remaining set, never a local flag --
+     * High Risk never grants Override, and a spent lifeline must stay spent
+     * across questions. Same convention as PlayPanel.refreshLifelines().
+     */
+    private void refreshLifelines() {
+        Set<Lifeline> remaining = engine.getRemainingLifelines();
+        for (int i = 0; i < lifelineButtons.length; i++) {
+            Lifeline lifeline = LIFELINE_ORDER[i];
+            boolean clickable = remaining.contains(lifeline) && !sessionOver && lifeline != Lifeline.OVERRIDE;
+            lifelineButtons[i].setEnabled(clickable);
         }
-        if (sessionOver || source == null || !source.isEnabled()) {
+    }
+
+    private void pullLifeline(Lifeline lifeline) {
+        if (sessionOver || !engine.getRemainingLifelines().contains(lifeline)) {
+            // stale click: the button is disabled whenever this would be true, but
+            // a defensive check here beats a stack trace from useLifeline()
+            refreshLifelines();
             return;
         }
         wakeMonitor();
-        source.setEnabled(false);
-        print(label + ": NOT IN ENGINE YET", true);
+        LifelineResult result = engine.useLifeline(lifeline);
+        if (lifeline == Lifeline.BINARY_CHOICE) {
+            removedChoiceIds.addAll(result.getRemovedChoiceIds());
+            List<Choice> choices = displayedQuestion.getChoices();
+            for (int i = 0; i < choices.size(); i++) {
+                if (removedChoiceIds.contains(choices.get(i).getChoiceId())) {
+                    keyButtons[i].setEnabled(false);
+                }
+            }
+            print("BINARY CHOICE: TWO WRONG UNITS PURGED", true);
+        } else {
+            predictedChoiceId = result.getPredictedChoiceId();
+            predictedConfidence = result.getConfidencePercent();
+            int position = positionOfChoiceId(predictedChoiceId);
+            String letter = position >= 0 ? String.valueOf("ABCD".charAt(position)) : "?";
+            print("PREDICT: AI SUGGESTS " + letter + " AT " + predictedConfidence + "%", true);
+        }
+        refreshLifelines();
+        repaint();
+    }
+
+    /** Display position of a choiceId in the currently displayed question, or -1. */
+    private int positionOfChoiceId(String choiceId) {
+        List<Choice> choices = displayedQuestion.getChoices();
+        for (int i = 0; i < choices.size(); i++) {
+            if (choices.get(i).getChoiceId().equals(choiceId)) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     private void pullSwitch() {
@@ -984,9 +1045,11 @@ public class ScenePanel extends JPanel implements GameScreen {
 
     private void paintChoice(Graphics2D g2, FontMetrics fm, Choice choice, char letter, int cx, int cy,
             List<String> lines, int letterW, int lineHeight) {
-        g2.setColor(CHALK_YELLOW);
+        boolean removed = removedChoiceIds.contains(choice.getChoiceId());
+        boolean predicted = choice.getChoiceId().equals(predictedChoiceId);
+        g2.setColor(removed ? BRASS_OX : CHALK_YELLOW);
         g2.drawString(letter + ".", cx, cy);
-        g2.setColor(CHALK);
+        g2.setColor(removed ? BRASS_OX : predicted ? CHALK_YELLOW : CHALK);
         int lineY = cy;
         int maxLineWidth = 0;
         for (String line : lines) {
