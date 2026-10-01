@@ -1,30 +1,42 @@
 package com.howtotrainyourai.gui;
 
-import com.howtotrainyourai.engine.FakeQuestionSource;
 import com.howtotrainyourai.engine.GameEngine;
-import com.howtotrainyourai.engine.Protocol;
-import com.howtotrainyourai.engine.SessionResult;
+import com.howtotrainyourai.engine.Lifeline;
+import com.howtotrainyourai.engine.LifelineResult;
 import com.howtotrainyourai.engine.TurnResult;
 import com.howtotrainyourai.model.Choice;
 import com.howtotrainyourai.model.Question;
-
-import javax.swing.*;
 import java.awt.*;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import javax.swing.*;
 
 // question screen: 15-segment ladder, 3 lifeline buttons, current question + 4 choices,
 // result banner, ai vitals monitor. matches the "simple version" question/correct/incorrect
 // frames in the team figma file (node 12:188/12:189/12:190), palette pulled from its
 // colors variable collection.
 //
-// session start (trainer name + protocol) and real lifeline behavior belong to other weeks'
-// owners, this just renders whatever GameEngine hands back per its "single seam" comment.
-// call startGame() once a session's been started on an engine to start showing questions.
-public class PlayPanel extends JPanel {
+// wired to the real engine: SetupPanel collects the trainer name and protocol, starts a
+// session, and calls startGame(). this panel only ever talks to the GameEngine INTERFACE,
+// never GameEngineImpl or a QuestionSource, per GameEngine's "single seam" comment.
+//
+// two things here are easy to get wrong and are commented where they happen:
+// a choice's display POSITION is not its choiceId (the bank shuffles), and an Override
+// retry means the engine did NOT advance.
+public class PlayPanel extends JPanel implements GameScreen {
 
     private static final int TOTAL_QUESTIONS = 15;
 
-    // figma "colors" variable collection (KJB4zCiGEjWFT3RivwklQM, id VariableCollectionId:3:2)
+    // lifeline buttons, left to right. OVERRIDE is in this list so it can be shown
+    // as held/spent, but it is never clickable -- the engine spends it on its own.
+    private static final Lifeline[] LIFELINE_ORDER = {
+            Lifeline.BINARY_CHOICE, Lifeline.PREDICT, Lifeline.OVERRIDE };
+    private static final String[] LIFELINE_LABELS = { "BC", "PR", "OV" };
+
+    // figma "colors" variable collection (KJB4zCiGEjWFT3RivwklQM, id
+    // VariableCollectionId:3:2)
     private static final Color PAPER = new Color(0xED, 0xE3, 0xCD);
     private static final Color PAPER_DARK = new Color(0xE2, 0xD5, 0xB8);
     private static final Color CHALKBOARD = new Color(0x2E, 0x3D, 0x34);
@@ -44,7 +56,7 @@ public class PlayPanel extends JPanel {
     private final CardPanel cardPanel;
     private final JLabel[] ladderSegments = new JLabel[TOTAL_QUESTIONS];
     private final Color[] ladderOutcomes = new Color[TOTAL_QUESTIONS]; // null = not answered yet
-    private final JButton[] lifelineButtons = new JButton[3];
+    private final JButton[] lifelineButtons = new JButton[LIFELINE_ORDER.length];
     private final JLabel questionLabel;
     private final JButton[] choiceButtons = new JButton[4];
     private final AiMonitorPanel monitorPanel;
@@ -54,6 +66,14 @@ public class PlayPanel extends JPanel {
     private GameEngine engine;
     private int questionIndex; // 0-based position in the current session
     private boolean sessionOver;
+
+    // the choices exactly as currently displayed -- index i is what button i shows.
+    private List<Choice> currentChoices = List.of();
+
+    // choiceIds Binary Choice removed from the CURRENT question. Cleared when the
+    // question changes, kept across an Override retry (the lifeline was already
+    // spent).
+    private final Set<String> removedChoiceIds = new HashSet<>();
 
     public PlayPanel(CardPanel cardPanel) {
         this.cardPanel = cardPanel;
@@ -80,9 +100,20 @@ public class PlayPanel extends JPanel {
 
         JPanel lifelinePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         lifelinePanel.setBackground(PAPER);
-        String[] lifelineLabels = { "BC", "PR", "OV" };
         for (int i = 0; i < lifelineButtons.length; i++) {
-            JButton button = createLifelineButton(lifelineLabels[i]);
+            Lifeline lifeline = LIFELINE_ORDER[i];
+            JButton button = createLifelineButton(LIFELINE_LABELS[i]);
+            if (lifeline == Lifeline.OVERRIDE) {
+                // Override is spent automatically by the engine on a wrong answer;
+                // useLifeline(OVERRIDE) throws by design. Display only.
+                button.setEnabled(false);
+                button.setToolTipText("Override: absorbs your first wrong answer automatically");
+            } else {
+                button.setToolTipText(lifeline == Lifeline.BINARY_CHOICE
+                        ? "Binary Choice: removes two wrong answers"
+                        : "Predict: the AI suggests an answer (not always right)");
+                button.addActionListener(e -> useLifeline(lifeline));
+            }
             lifelineButtons[i] = button;
             lifelinePanel.add(button);
         }
@@ -106,8 +137,11 @@ public class PlayPanel extends JPanel {
 
         for (int i = 0; i < choiceButtons.length; i++) {
             JButton choiceButton = createChoiceButton();
-            final String choiceId = String.valueOf((char) ('a' + i));
-            choiceButton.addActionListener(e -> submitAnswer(choiceId));
+            final int position = i;
+            // Submit the choiceId of whatever is SHOWN in this slot right now, looked
+            // up at click time. Binding ('a' + i) here instead would be wrong: the
+            // bank shuffles each question's choices, so slot 0 is not always "a".
+            choiceButton.addActionListener(e -> submitAnswerAt(position));
             choiceButtons[i] = choiceButton;
             questionCard.add(choiceButton);
             questionCard.add(Box.createVerticalStrut(14));
@@ -141,12 +175,12 @@ public class PlayPanel extends JPanel {
         JPanel navButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
         navButtons.setBackground(PAPER);
         JButton backButton = createLifelineButton("Back");
-        backButton.addActionListener(e -> cardPanel.showScreen(CardPanel.MENU));
+        backButton.addActionListener(e -> leaveSession());
         nextButton = createLifelineButton("Next");
         nextButton.setEnabled(false);
         nextButton.addActionListener(e -> {
             if (sessionOver) {
-                cardPanel.showScreen(CardPanel.MENU);
+                leaveSession();
             } else {
                 showQuestion();
             }
@@ -166,7 +200,6 @@ public class PlayPanel extends JPanel {
         button.setBackground(BRASS);
         button.setFocusPainted(false);
         button.setBorder(BorderFactory.createEmptyBorder(8, 14, 8, 14));
-        // binary choice/predict/override behavior is week 4 scope, layout only here
         return button;
     }
 
@@ -192,38 +225,48 @@ public class PlayPanel extends JPanel {
 
             @Override
             public void mouseExited(java.awt.event.MouseEvent e) {
-                button.setForeground(CHALK_LINE);
+                button.setForeground(button.isEnabled() ? CHALK_LINE : BRASS_DARK);
             }
         });
         return button;
     }
 
-    // starts rendering a session that's already been started on engine
+    /**
+     * Starts rendering a session that SetupPanel has already started on the engine.
+     */
+
+    @Override
     public void startGame(GameEngine engine) {
         this.engine = engine;
         this.questionIndex = 0;
         this.sessionOver = false;
-        java.util.Arrays.fill(ladderOutcomes, null);
+        Arrays.fill(ladderOutcomes, null);
+        removedChoiceIds.clear();
         showQuestion();
     }
 
+    /**
+     * Leaves the question screen. A session still in progress is ended here --
+     * that's end condition (c), "Return", in CONTEXT.md 2.5, and without this
+     * call the engine would sit believing the run is still live.
+     */
+    private void leaveSession() {
+        if (engine != null && !sessionOver) {
+            engine.endSession();
+            sessionOver = true;
+        }
+        cardPanel.showScreen(CardPanel.MENU);
+    }
+
     private void showQuestion() {
+        removedChoiceIds.clear();
         Question question = engine.currentQuestion();
         questionLabel.setText(question.getText());
+        currentChoices = question.getChoices();
 
-        List<Choice> choices = question.getChoices();
-        for (int i = 0; i < choiceButtons.length; i++) {
-            Choice choice = choices.get(i);
-            choiceButtons[i].setText((char) ('A' + i) + ".  " + choice.getText());
-            choiceButtons[i].setForeground(CHALK_LINE);
-            choiceButtons[i].setEnabled(true);
-        }
-
+        refreshChoices();
         refreshLadder();
-        for (JButton lifelineButton : lifelineButtons) {
-            lifelineButton.setEnabled(true);
-            lifelineButton.setBackground(BRASS);
-        }
+        refreshLifelines();
 
         bannerLabel.setText(" ");
         bannerLabel.setBackground(PAPER);
@@ -234,6 +277,29 @@ public class PlayPanel extends JPanel {
         nextButton.repaint();
     }
 
+    /**
+     * Repaints the four answer slots from currentChoices. Slots holding a choice
+     * Binary Choice removed are struck through and disabled but keep their letter,
+     * so the remaining letters don't shuffle under the player mid-question.
+     */
+    private void refreshChoices() {
+        for (int i = 0; i < choiceButtons.length; i++) {
+            JButton button = choiceButtons[i];
+            if (i >= currentChoices.size()) {
+                button.setVisible(false);
+                continue;
+            }
+            Choice choice = currentChoices.get(i);
+            boolean removed = removedChoiceIds.contains(choice.getChoiceId());
+            button.setVisible(true);
+            button.setText((char) ('A' + i) + ".  " + (removed
+                    ? "<html><strike>" + choice.getText() + "</strike></html>"
+                    : choice.getText()));
+            button.setEnabled(!removed && !sessionOver);
+            button.setForeground(removed ? BRASS_DARK : CHALK_LINE);
+        }
+    }
+
     private void refreshLadder() {
         for (int i = 0; i < ladderSegments.length; i++) {
             Color outcome = ladderOutcomes[i];
@@ -241,13 +307,83 @@ public class PlayPanel extends JPanel {
         }
     }
 
-    private void submitAnswer(String choiceId) {
+    /**
+     * Enabled state comes from the engine's remaining set, never from a local
+     * counter -- High Risk never grants Override, and a spent lifeline must stay
+     * spent across questions.
+     */
+    private void refreshLifelines() {
+        Set<Lifeline> remaining = engine.getRemainingLifelines();
+        for (int i = 0; i < lifelineButtons.length; i++) {
+            Lifeline lifeline = LIFELINE_ORDER[i];
+            boolean held = remaining.contains(lifeline);
+            boolean clickable = held && !sessionOver && lifeline != Lifeline.OVERRIDE;
+            lifelineButtons[i].setEnabled(clickable);
+            lifelineButtons[i].setBackground(held && !sessionOver ? BRASS : PAPER_DARK);
+        }
+    }
+
+    private void useLifeline(Lifeline lifeline) {
+        LifelineResult result;
+        try {
+            result = engine.useLifeline(lifeline);
+        } catch (RuntimeException e) {
+            // Shouldn't happen -- the button is disabled when unavailable -- but a
+            // stale click beats a stack trace in the console.
+            refreshLifelines();
+            return;
+        }
+
+        if (lifeline == Lifeline.BINARY_CHOICE) {
+            removedChoiceIds.addAll(result.getRemovedChoiceIds());
+            refreshChoices();
+            bannerLabel.setBackground(BRASS_DARK);
+            bannerLabel.setText("BINARY CHOICE — two wrong answers removed");
+        } else {
+            int position = positionOfChoiceId(result.getPredictedChoiceId());
+            String letter = position >= 0 ? String.valueOf((char) ('A' + position)) : "?";
+            if (position >= 0) {
+                choiceButtons[position].setForeground(BRASS);
+            }
+            bannerLabel.setBackground(BRASS_DARK);
+            bannerLabel.setText("PREDICT — the AI suggests " + letter
+                    + " at " + result.getConfidencePercent() + "% confidence (it can be wrong)");
+        }
+        refreshLifelines();
+    }
+
+    /** Display position of a choiceId in the current question, or -1 if absent. */
+    private int positionOfChoiceId(String choiceId) {
+        for (int i = 0; i < currentChoices.size(); i++) {
+            if (currentChoices.get(i).getChoiceId().equals(choiceId)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /** Answers with whatever choice is displayed in the given slot. */
+    private void submitAnswerAt(int position) {
         Question answeredQuestion = engine.currentQuestion();
+        Choice picked = currentChoices.get(position);
         for (JButton choiceButton : choiceButtons) {
             choiceButton.setEnabled(false);
         }
 
-        TurnResult result = engine.submitAnswer(choiceId);
+        TurnResult result = engine.submitAnswer(picked.getChoiceId());
+
+        if (result.isRetry()) {
+            // Override absorbed the miss. The engine did NOT advance: same question,
+            // no ladder mark, no index bump, and no explanation -- printing it would
+            // hand over the answer the player is about to re-attempt.
+            bannerLabel.setBackground(BRASS_DARK);
+            bannerLabel.setText("OVERRIDE ENGAGED — no tokens lost. Try this question again.");
+            monitorPanel.setMode(AiMonitorPanel.Mode.FROWN);
+            refreshChoices();
+            refreshLifelines();
+            return;
+        }
+
         ladderOutcomes[questionIndex] = result.isCorrect() ? TAPE_GREEN : TAPE_RED;
         questionIndex++;
         sessionOver = result.isGameOver();
@@ -256,7 +392,8 @@ public class PlayPanel extends JPanel {
         bannerLabel.setForeground(PAPER);
         if (result.isCorrect()) {
             bannerLabel.setBackground(TAPE_GREEN);
-            String text = "CORRECT — TRAINING SCORE +" + result.getTokensAwarded();
+            String text = "CORRECT — TRAINING SCORE +" + result.getTokensAwarded()
+                    + "  (total: " + result.getRunningTotal() + ")";
             if (result.isCapabilityUnlocked()) {
                 text += "  |  " + result.getCapabilityName().toUpperCase() + " RESTORED";
             }
@@ -268,12 +405,7 @@ public class PlayPanel extends JPanel {
             monitorPanel.setMode(AiMonitorPanel.Mode.FROWN);
         }
 
-        if (sessionOver) {
-            for (JButton lifelineButton : lifelineButtons) {
-                lifelineButton.setEnabled(false);
-                lifelineButton.setBackground(PAPER_DARK);
-            }
-        }
+        refreshLifelines();
 
         nextButton.setText(sessionOver ? "Back to Menu" : "Next");
         nextButton.setEnabled(true);
@@ -282,10 +414,13 @@ public class PlayPanel extends JPanel {
         nextButton.repaint();
     }
 
-    // small crt-style "ai vitals" readout, same monitor shown on every screen in the figma file
+    // small crt-style "ai vitals" readout, same monitor shown on every screen in
+    // the figma file
     private static class AiMonitorPanel extends JComponent {
 
-        enum Mode { TENSE, TALKING, FROWN }
+        enum Mode {
+            TENSE, TALKING, FROWN
+        }
 
         private Mode mode = Mode.TENSE;
 
@@ -337,58 +472,5 @@ public class PlayPanel extends JPanel {
 
             g2.dispose();
         }
-    }
-
-    // manual visual check only, GameEngineImpl (real rules/ladder) is week 2 work owned
-    // elsewhere. this stubs just enough of the interface to click through the layout.
-    public static void main(String[] args) throws Exception {
-        // aqua (macos) ignores custom JButton colors/borders otherwise, brass buttons
-        // render as invisible/unstyled text instead
-        UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
-
-        List<Question> questions = new FakeQuestionSource().buildSession();
-
-        GameEngine demoEngine = new GameEngine() {
-            int index = 0;
-            int total = 0;
-
-            @Override
-            public void startSession(String trainerName, Protocol protocol) {
-                index = 0;
-                total = 0;
-            }
-
-            @Override
-            public Question currentQuestion() {
-                return questions.get(index);
-            }
-
-            @Override
-            public TurnResult submitAnswer(String choiceId) {
-                Question question = questions.get(index);
-                boolean correct = question.isCorrect(choiceId);
-                int tokens = correct ? (index + 1) * 10 : 0;
-                total += tokens;
-                index++;
-                boolean gameOver = !correct || index >= questions.size();
-                boolean capabilityUnlocked = correct
-                        && (index == 3 || index == 5 || index == 8 || index == 10 || index == 13 || index == 15);
-                return new TurnResult(correct, tokens, total, capabilityUnlocked,
-                        capabilityUnlocked ? "Capability " + index : null, gameOver);
-            }
-
-            @Override
-            public SessionResult endSession() {
-                return new SessionResult();
-            }
-        };
-
-        JFrame frame = new JFrame("PlayPanel demo");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        PlayPanel panel = new PlayPanel(new CardPanel());
-        frame.add(panel);
-        frame.setSize(1000, 720);
-        frame.setVisible(true);
-        panel.startGame(demoEngine);
     }
 }

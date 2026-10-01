@@ -4,6 +4,7 @@ import com.howtotrainyourai.gui.CardPanel;
 import com.howtotrainyourai.gui.MainMenuPanel;
 import com.howtotrainyourai.gui.PlayPanel;
 import com.howtotrainyourai.gui.SettingsPanel;
+import com.howtotrainyourai.gui.SetupPanel;
 import com.howtotrainyourai.gui.TutorialPanel;
 import java.awt.*;
 import javax.swing.*;
@@ -27,8 +28,14 @@ public class Main {
 
         CardPanel cardPanel = new CardPanel();
 
+        // PlayPanel first: SetupPanel needs it, because SetupPanel is what starts a
+        // session and hands the live engine over. Nothing here builds an engine --
+        // that happens per session in SetupPanel, via GameEngineFactory.
+        PlayPanel playPanel = new PlayPanel(cardPanel);
+
         cardPanel.addScreen(CardPanel.MENU, new MainMenuPanel(cardPanel));
-        cardPanel.addScreen(CardPanel.PLAY, new PlayPanel(cardPanel));
+        cardPanel.addScreen(CardPanel.SETUP, new SetupPanel(cardPanel, playPanel));
+        cardPanel.addScreen(CardPanel.PLAY, playPanel);
         cardPanel.addScreen(CardPanel.TUTORIAL, new TutorialPanel(cardPanel));
         cardPanel.addScreen(CardPanel.SETTINGS, new SettingsPanel(cardPanel));
 
