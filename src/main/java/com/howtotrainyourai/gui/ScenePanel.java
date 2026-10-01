@@ -14,6 +14,7 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.GeneralPath;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 // blocking pass for the vintage ai lab scene, see
 // ~/dev/Java/CMSC170/reference-photos/restoration-bay-fold-claude-table.html for the
@@ -109,8 +110,13 @@ public class ScenePanel extends JPanel implements GameScreen {
     // decorative backing panel behind the keybank/next row: left:31.5cqw/bottom:5.3cqw
     // of the desk box, width 47.5cqw, height 8.2cqw
     private static final double DECK_X = 440, DECK_Y = 844, DECK_W = 760, DECK_H = 131;
-    // raised rear shelf backing strip, full desk width: top:-.4cqw/height:8cqw of the desk box
+    // raised rear shelf backing strip, full desk width: top:-.4cqw/height:8cqw of the
+    // desk box. it's two layers, not one solid block: a thin brass top lip
+    // (.shelfbar .top, 1.6cqw) over a wood-dark facade (.shelfbar .facade) that
+    // blends into the desk -- filling the whole strip brass left a stray block
+    // showing above the operator log where the mockup shows nothing
     private static final double SHELFBAR_X = -64, SHELFBAR_Y = 714, SHELFBAR_W = 1728, SHELFBAR_H = 128;
+    private static final double SHELFBAR_LIP_H = 26;
     // the shelf platform itself: left:15cqw/top:-.4cqw/width:68cqw/height:8cqw of the desk box
     private static final double SHELF_X = 176, SHELF_Y = 714, SHELF_W = 1088, SHELF_H = 128;
     // lifeline bay module on the shelf: left:11.6cqw/top:1.75cqw/width:26.4cqw/height:6cqw of the shelf
@@ -134,12 +140,64 @@ public class ScenePanel extends JPanel implements GameScreen {
     // aspect 738:325
     private static final double LOG_X = -16, LOG_Y = 850, LOG_W = 192, LOG_H = 210;
     private static final double CARD_X = 200, CARD_Y = 925, CARD_W = 192, CARD_H = 85;
+    // mockup rotate() transforms on elements NOT nested under .desk (so unrelated to
+    // the taper field below): .monitor 3deg, .log -6deg, .card 8deg
+    private static final double MONITOR_ROTATE_DEG = 3, LOG_ROTATE_DEG = -6, CARD_ROTATE_DEG = 8;
+
+    // approximates .desk's perspective(60cqw) rotateX(17deg) (java2d has no true 3d
+    // transform) by reusing the desk polygon's own established taper below: narrower
+    // at the top (y=720, width 1320), wider at the bottom (y=1000, width 1728), both
+    // centered on x=800. every desk-row shape/button interpolates against this same
+    // field so the whole assembly tapers consistently, not just the background.
+    private static final double DESK_TOP_Y = 720, DESK_BOTTOM_Y = 1000;
+    private static final double DESK_TOP_W = 1320, DESK_BOTTOM_W = 1728;
+    private static final double DESK_CENTER_X = 800;
+
+    private double deskWidthAt(double y) {
+        double t = (y - DESK_TOP_Y) / (DESK_BOTTOM_Y - DESK_TOP_Y);
+        return DESK_TOP_W + t * (DESK_BOTTOM_W - DESK_TOP_W);
+    }
+
+    // an untapered desk-relative rect (x,y,w,h) -- as already computed from the
+    // mockup's raw css percentages against the full DESK_X/DESK_W box -- to the 4
+    // screen corners of the trapezoid it occupies once the desk's taper is applied.
+    // {topLeftX, topRightX, bottomLeftX, bottomRightX}; y's are unchanged (x+w, y+h).
+    private double[] taperedQuad(double x, double y, double w, double h) {
+        double leftFrac = (x - DESK_X) / DESK_W;
+        double rightFrac = (x + w - DESK_X) / DESK_W;
+        double topWidth = deskWidthAt(y);
+        double bottomWidth = deskWidthAt(y + h);
+        double topLeftX = DESK_CENTER_X - topWidth / 2 + leftFrac * topWidth;
+        double topRightX = DESK_CENTER_X - topWidth / 2 + rightFrac * topWidth;
+        double bottomLeftX = DESK_CENTER_X - bottomWidth / 2 + leftFrac * bottomWidth;
+        double bottomRightX = DESK_CENTER_X - bottomWidth / 2 + rightFrac * bottomWidth;
+        return new double[] { topLeftX, topRightX, bottomLeftX, bottomRightX };
+    }
+
+    private Polygon taperedPolygon(double x, double y, double w, double h) {
+        double[] quad = taperedQuad(x, y, w, h);
+        Polygon p = new Polygon();
+        p.addPoint((int) quad[0], (int) y);
+        p.addPoint((int) quad[1], (int) y);
+        p.addPoint((int) quad[3], (int) (y + h));
+        p.addPoint((int) quad[2], (int) (y + h));
+        return p;
+    }
+
+    // wraps a shape that isn't a .desk child (monitor/log/card) in a plain 2d
+    // rotation around its own center -- unrelated to the taper field above
+    private void paintRotated(Graphics2D g2, double cx, double cy, double degrees, Consumer<Graphics2D> paint) {
+        Graphics2D g2r = (Graphics2D) g2.create();
+        g2r.rotate(Math.toRadians(degrees), cx, cy);
+        paint.accept(g2r);
+        g2r.dispose();
+    }
 
     private final CardPanel cardPanel;
     private final Color[] ladderOutcomes = new Color[TOTAL_QUESTIONS]; // null = not answered yet
-    private final JButton[] lifelineButtons = new JButton[3];
-    private final JButton[] keyButtons = new JButton[4];
-    private final JButton nextButton;
+    private final TaperedButton[] lifelineButtons = new TaperedButton[3];
+    private final TaperedButton[] keyButtons = new TaperedButton[4];
+    private final TaperedButton nextButton;
     private final SwitchButton switchButton;
     private final JButton backButton;
     private final List<String> paperLines = new ArrayList<>();
@@ -195,7 +253,7 @@ public class ScenePanel extends JPanel implements GameScreen {
 
         String[] lifelineLabels = { "BINARY", "PREDICT", "OVERRIDE" };
         for (int i = 0; i < lifelineButtons.length; i++) {
-            JButton button = flatButton(lifelineLabels[i], FONT_LIFELINE, BRASS, PAPER);
+            TaperedButton button = new TaperedButton(lifelineLabels[i], FONT_LIFELINE, BRASS, PAPER);
             final int lifelineIndex = i;
             button.addActionListener(e -> pullLifeline(lifelineLabels[lifelineIndex]));
             lifelineButtons[i] = button;
@@ -204,14 +262,14 @@ public class ScenePanel extends JPanel implements GameScreen {
 
         String[] keyLabels = { "A", "B", "C", "D" };
         for (int i = 0; i < keyButtons.length; i++) {
-            JButton button = flatButton(keyLabels[i], FONT_PROMPT, BRASS_LIT, WOOD_DARK);
+            TaperedButton button = new TaperedButton(keyLabels[i], FONT_PROMPT, BRASS_LIT, WOOD_DARK);
             final int position = i;
             button.addActionListener(e -> submitAnswerAt(position));
             keyButtons[i] = button;
             add(button);
         }
 
-        nextButton = flatButton("NEXT PROBE", FONT_LABEL, BRASS, PAPER);
+        nextButton = new TaperedButton("NEXT PROBE", FONT_LABEL, BRASS, PAPER);
         nextButton.setEnabled(false);
         nextButton.addActionListener(e -> {
             if (sessionOver) {
@@ -271,20 +329,36 @@ public class ScenePanel extends JPanel implements GameScreen {
         c.setBounds(x, y, w, h);
     }
 
+    // a control painted via TaperedButton/SwitchButton's shared trapezoid clip
+    private interface Tapered {
+        void setTaperInsets(double left, double right);
+    }
+
+    // positions a desk-row control at its tapered trapezoid (taperedQuad()): swing
+    // bounds become the bounding box (hit-testing stays rectangular), and the
+    // control's own paint clips inward to the actual trapezoid via scaled insets
+    private void placeTapered(JComponent button, double x, double y, double w, double h) {
+        double[] quad = taperedQuad(x, y, w, h);
+        double boundLeft = Math.min(quad[0], quad[2]);
+        double boundRight = Math.max(quad[1], quad[3]);
+        place(button, boundLeft, y, boundRight - boundLeft, h);
+        ((Tapered) button).setTaperInsets((quad[0] - boundLeft) * scale, (boundRight - quad[1]) * scale);
+    }
+
     private void relayout() {
         scale = Math.min(getWidth() / LOGICAL_W, getHeight() / LOGICAL_H);
         offsetX = (getWidth() - LOGICAL_W * scale) / 2;
         offsetY = (getHeight() - LOGICAL_H * scale) / 2;
 
         for (int i = 0; i < lifelineButtons.length; i++) {
-            place(lifelineButtons[i], LIFELINE_X[i], LIFELINE_Y, LIFELINE_W[i], LIFELINE_H);
+            placeTapered(lifelineButtons[i], LIFELINE_X[i], LIFELINE_Y, LIFELINE_W[i], LIFELINE_H);
         }
         for (int i = 0; i < keyButtons.length; i++) {
             double y = KEYS_Y + (i == selectedKeyIndex ? KEY_DEPRESS : 0);
-            place(keyButtons[i], KEYS_X + i * (KEY_W + KEY_GAP), y, KEY_W, KEY_H);
+            placeTapered(keyButtons[i], KEYS_X + i * (KEY_W + KEY_GAP), y, KEY_W, KEY_H);
         }
-        place(nextButton, NEXT_X, NEXT_Y, NEXT_W, NEXT_H);
-        place(switchButton, SWITCH_X, SWITCH_Y, SWITCH_W, SWITCH_H);
+        placeTapered(nextButton, NEXT_X, NEXT_Y, NEXT_W, NEXT_H);
+        placeTapered(switchButton, SWITCH_X, SWITCH_Y, SWITCH_W, SWITCH_H);
         place(backButton, BACK_X, BACK_Y, BACK_W, BACK_H);
         repaint();
     }
@@ -523,39 +597,44 @@ public class ScenePanel extends JPanel implements GameScreen {
 
         // decorative backing panel behind the keybank/next row
         g2.setColor(WOOD_DARK);
-        g2.fillRect((int) DECK_X, (int) DECK_Y, (int) DECK_W, (int) DECK_H);
+        g2.fillPolygon(taperedPolygon(DECK_X, DECK_Y, DECK_W, DECK_H));
 
-        // raised rear shelf: a field-fitted bypass carrier for the lifelines, plus
-        // the teletype and train/secure switch housing
+        // raised rear shelf: thin brass top lip over a wood-dark facade (see
+        // SHELFBAR_LIP_H comment), then the shelf platform holding the lifeline
+        // bay/carrier, teletype, and switch -- every piece tapers with the desk
         g2.setColor(BRASS);
-        g2.fillRect((int) SHELFBAR_X, (int) SHELFBAR_Y, (int) SHELFBAR_W, (int) SHELFBAR_H);
+        g2.fillPolygon(taperedPolygon(SHELFBAR_X, SHELFBAR_Y, SHELFBAR_W, SHELFBAR_LIP_H));
         g2.setColor(WOOD_DARK);
-        g2.fillRect((int) SHELF_X, (int) SHELF_Y, (int) SHELF_W, (int) SHELF_H);
+        g2.fillPolygon(taperedPolygon(SHELFBAR_X, SHELFBAR_Y + SHELFBAR_LIP_H, SHELFBAR_W, SHELFBAR_H - SHELFBAR_LIP_H));
+        g2.fillPolygon(taperedPolygon(SHELF_X, SHELF_Y, SHELF_W, SHELF_H));
 
         g2.setColor(SHELF_WELL);
-        g2.fillRect((int) BAY_X, (int) BAY_Y, (int) BAY_W, (int) BAY_H);
+        g2.fillPolygon(taperedPolygon(BAY_X, BAY_Y, BAY_W, BAY_H));
         g2.setColor(STEEL);
-        g2.fillRect((int) CARRIER_X, (int) CARRIER_Y, (int) CARRIER_W, (int) CARRIER_H);
+        g2.fillPolygon(taperedPolygon(CARRIER_X, CARRIER_Y, CARRIER_W, CARRIER_H));
         for (int i = 0; i < LIFELINE_X.length; i++) {
             g2.setColor(SHELF_WELL);
-            g2.fillRect((int) LIFELINE_X[i] - 4, (int) LIFELINE_Y - 4, (int) LIFELINE_W[i] + 8, (int) LIFELINE_H + 8);
+            g2.fillPolygon(taperedPolygon(LIFELINE_X[i] - 4, LIFELINE_Y - 4, LIFELINE_W[i] + 8, LIFELINE_H + 8));
         }
 
         g2.setColor(BRASS_OX);
-        g2.fillRect((int) TELETYPE_X, (int) TELETYPE_Y, (int) TELETYPE_W, (int) TELETYPE_H);
+        g2.fillPolygon(taperedPolygon(TELETYPE_X, TELETYPE_Y, TELETYPE_W, TELETYPE_H));
         paintPaper(g2);
         g2.setColor(CHALK);
         g2.setFont(FONT_LADDER);
         g2.drawString("RECORD", (int) (TELETYPE_X + TELETYPE_W / 2 - 20), (int) (TELETYPE_Y + TELETYPE_H - 6));
 
-        paintCard(g2);
-        paintLog(g2);
-
-        g2.setColor(BRASS);
-        g2.fillRoundRect((int) MONITOR_X, (int) MONITOR_Y, (int) MONITOR_W, (int) MONITOR_H, 24, 24);
-        g2.setColor(new Color(0x0e, 0x1d, 0x14));
-        g2.fillRoundRect((int) MONITOR_X + 14, (int) MONITOR_Y + 14, (int) MONITOR_W - 28, (int) MONITOR_H - 28, 14, 14);
-        paintMonitor(g2);
+        // monitor/log/card are siblings of .desk, not children -- plain 2d rotations
+        // around their own centers, unrelated to the taper field above
+        paintRotated(g2, CARD_X + CARD_W / 2, CARD_Y + CARD_H / 2, CARD_ROTATE_DEG, this::paintCard);
+        paintRotated(g2, LOG_X + LOG_W / 2, LOG_Y + LOG_H / 2, LOG_ROTATE_DEG, this::paintLog);
+        paintRotated(g2, MONITOR_X + MONITOR_W / 2, MONITOR_Y + MONITOR_H / 2, MONITOR_ROTATE_DEG, g2m -> {
+            g2m.setColor(BRASS);
+            g2m.fillRoundRect((int) MONITOR_X, (int) MONITOR_Y, (int) MONITOR_W, (int) MONITOR_H, 24, 24);
+            g2m.setColor(new Color(0x0e, 0x1d, 0x14));
+            g2m.fillRoundRect((int) MONITOR_X + 14, (int) MONITOR_Y + 14, (int) MONITOR_W - 28, (int) MONITOR_H - 28, 14, 14);
+            paintMonitor(g2m);
+        });
 
         g2.dispose();
     }
@@ -983,27 +1062,95 @@ public class ScenePanel extends JPanel implements GameScreen {
         }
     }
 
+    // a desk-row control (key/next/lifeline) whose swing bounds are the tapered
+    // trapezoid's bounding box (full width at the bottom edge, see taperedQuad());
+    // paintComponent fills/clips to the actual trapezoid within those bounds. hit-
+    // testing stays rectangular -- same approximation tier as the desk polygon.
+    private static class TaperedButton extends JButton implements Tapered {
+        double topInsetLeft, topInsetRight;
+
+        TaperedButton(String text, Font font, Color background, Color foreground) {
+            super(text);
+            setFont(font);
+            setForeground(foreground);
+            setBackground(background);
+            setFocusPainted(false);
+            setBorderPainted(false);
+            setContentAreaFilled(false);
+            setOpaque(false);
+        }
+
+        public void setTaperInsets(double left, double right) {
+            topInsetLeft = left;
+            topInsetRight = right;
+            repaint();
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            int w = getWidth();
+            int h = getHeight();
+
+            Polygon trapezoid = new Polygon();
+            trapezoid.addPoint((int) topInsetLeft, 0);
+            trapezoid.addPoint((int) (w - topInsetRight), 0);
+            trapezoid.addPoint(w, h);
+            trapezoid.addPoint(0, h);
+            g2.setColor(isEnabled() ? getBackground() : getBackground().darker());
+            g2.fillPolygon(trapezoid);
+            g2.setClip(trapezoid);
+
+            g2.setColor(isEnabled() ? getForeground() : getForeground().darker());
+            g2.setFont(getFont());
+            FontMetrics fm = g2.getFontMetrics();
+            String text = getText();
+            int tx = (w - fm.stringWidth(text)) / 2;
+            int ty = (h + fm.getAscent() - fm.getDescent()) / 2;
+            g2.drawString(text, tx, ty);
+            g2.dispose();
+        }
+    }
+
     // ports the mockup's .switch .cyl/.key-bit: a brass disc with a bit that
     // flips angle on pullSwitch(), labels dimming on whichever side isn't active
-    private static class SwitchButton extends JButton {
+    private static class SwitchButton extends JButton implements Tapered {
         boolean turned;
+        double topInsetLeft, topInsetRight;
 
         SwitchButton() {
             setText("");
             setFocusPainted(false);
             setBorderPainted(false);
-            setOpaque(true);
+            setContentAreaFilled(false);
+            setOpaque(false);
             setBackground(BRASS);
+        }
+
+        public void setTaperInsets(double left, double right) {
+            topInsetLeft = left;
+            topInsetRight = right;
+            repaint();
         }
 
         @Override
         protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
             int w = getWidth();
             int h = getHeight();
+
+            Polygon trapezoid = new Polygon();
+            trapezoid.addPoint((int) topInsetLeft, 0);
+            trapezoid.addPoint((int) (w - topInsetRight), 0);
+            trapezoid.addPoint(w, h);
+            trapezoid.addPoint(0, h);
+            g2.setColor(getBackground());
+            g2.fillPolygon(trapezoid);
+            g2.setClip(trapezoid);
+
             g2.setFont(FONT_LABEL);
             FontMetrics fm = g2.getFontMetrics();
             g2.setColor(turned ? WOOD_DARK.brighter() : WOOD_DARK);
