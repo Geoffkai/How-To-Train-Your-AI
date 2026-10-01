@@ -1168,11 +1168,18 @@ public class ScenePanel extends JPanel implements GameScreen {
 
             g2.setFont(FONT_LABEL);
             FontMetrics fm = g2.getFontMetrics();
+            int labelY = fm.getAscent() + 4;
+            // labels sit near the trapezoid's top edge, which the taper clips narrower
+            // than the full (bottom) width w -- anchor to that edge, not to w directly,
+            // or the side further from the desk's center clips off (found live: "SECURE"
+            // was cut to "SEC")
+            double topLeft = topInsetLeft;
+            double topRight = w - topInsetRight;
             g2.setColor(turned ? WOOD_DARK.brighter() : WOOD_DARK);
-            g2.drawString("TRAIN", 6, fm.getAscent() + 4);
+            g2.drawString("TRAIN", (int) topLeft + 6, labelY);
             String secure = "SECURE";
             g2.setColor(turned ? WOOD_DARK : WOOD_DARK.brighter());
-            g2.drawString(secure, w - fm.stringWidth(secure) - 6, fm.getAscent() + 4);
+            g2.drawString(secure, (int) topRight - fm.stringWidth(secure) - 6, labelY);
 
             int cx = w / 2;
             int cy = (int) (h * 0.62);
