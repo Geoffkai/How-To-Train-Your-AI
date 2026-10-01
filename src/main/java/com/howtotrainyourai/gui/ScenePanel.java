@@ -9,6 +9,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.geom.GeneralPath;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,6 +56,22 @@ public class ScenePanel extends JPanel implements GameScreen {
     // capability unlock order, matches GameEngineImpl.CAPABILITY_UNLOCKS (Q3/5/8/10/13/15)
     private static final String[] CAPABILITY_NAMES = {
             "MEMORY", "UNDERSTANDING", "APPLICATION", "ANALYSIS", "EVALUATION", "SYNTHESIZE" };
+
+    // mockup --phosphor / --phosphor-warn, plus the dvd-bounce TINTS array
+    private static final Color PHOSPHOR = Color.decode("#86e8a2");
+    private static final Color PHOSPHOR_WARN = Color.decode("#e9a263");
+    private static final Color[] IDLE_TINTS = {
+            PHOSPHOR, Color.decode("#e9c46a"), Color.decode("#9fe3f0"), PHOSPHOR_WARN };
+    private static final double FACE_W = 70, FACE_H = 46;
+    private static final int IDLE_MS = 12000;
+    private static final int MONITOR_TICK_MS = 50;
+    private static final int HEART_RATE_TICK_MS = 900;
+    private static final double BLINK_CYCLE_MS = 4600;
+
+    // face-led identity ported from PlayPanel.AiMonitorPanel, extended with the
+    // mockup's state/blink/idle-bounce behavior rather than redesigned toward its
+    // separate instrument-like look (see corpus "Fold pass - user decisions")
+    private enum MonitorState { LISTENING, HAPPY, ALERT, CLOSED, IDLE }
 
     private static final Font FONT_LADDER = new Font(Font.MONOSPACED, Font.BOLD, 11);
     private static final Font FONT_PROMPT = new Font(Font.MONOSPACED, Font.BOLD, 20);
@@ -144,6 +162,21 @@ public class ScenePanel extends JPanel implements GameScreen {
     // index of the key that was pressed to answer the current question, -1 if none
     private int selectedKeyIndex = -1;
     private final boolean[] lampsOn = new boolean[CAPABILITY_NAMES.length];
+
+    // ai vitals monitor state, see paintMonitor()/tickMonitor()
+    private MonitorState monitorState = MonitorState.LISTENING;
+    private boolean waitingForAnswer;
+    private int heartRate = 72;
+    private double waveOffset;
+    private boolean eyesClosed;
+    private double faceX = (MONITOR_W - 28) / 2.0 - FACE_W / 2.0;
+    private double faceY = (MONITOR_H - 28) / 2.0 - FACE_H / 2.0;
+    private double faceVX = 1, faceVY = 0.72;
+    private int idleTintIndex;
+    private Color idleTint = IDLE_TINTS[0];
+    private Timer monitorTimer;
+    private Timer heartRateTimer;
+    private Timer idleTimer;
     // the board only pulls a fresh question on showQuestion() (start / Next click),
     // never mid-turn, so the just-answered prompt stays up until the player advances
     private Question displayedQuestion;
@@ -203,6 +236,18 @@ public class ScenePanel extends JPanel implements GameScreen {
                 relayout();
             }
         });
+
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                wakeMonitor();
+            }
+        });
+
+        monitorTimer = new Timer(MONITOR_TICK_MS, e -> tickMonitor());
+        monitorTimer.start();
+        heartRateTimer = new Timer(HEART_RATE_TICK_MS, e -> tickHeartRate());
+        heartRateTimer.start();
     }
 
     private JButton flatButton(String text, Font font, Color background, Color foreground) {
@@ -269,6 +314,13 @@ public class ScenePanel extends JPanel implements GameScreen {
         markerLatched = false;
         switchButton.turned = false;
         java.util.Arrays.fill(lampsOn, false);
+        if (idleTimer != null) {
+            idleTimer.stop();
+        }
+        monitorState = MonitorState.LISTENING;
+        heartRate = 72;
+        faceX = (MONITOR_W - 28) / 2.0 - FACE_W / 2.0;
+        faceY = (MONITOR_H - 28) / 2.0 - FACE_H / 2.0;
         print("BAY 04 LINK OPEN", true);
         print("AWAITING HUMAN VERIFIER", true);
         showQuestion();
@@ -290,6 +342,9 @@ public class ScenePanel extends JPanel implements GameScreen {
         selectedKeyIndex = -1;
         displayedAnsweredChoiceId = null;
         displayedCorrectChoiceId = null;
+        monitorState = MonitorState.LISTENING;
+        waitingForAnswer = true;
+        scheduleIdle();
         relayout();
     }
 
@@ -303,6 +358,7 @@ public class ScenePanel extends JPanel implements GameScreen {
         if (sessionOver || source == null || !source.isEnabled()) {
             return;
         }
+        wakeMonitor();
         source.setEnabled(false);
         print(label + ": NOT IN ENGINE YET", true);
     }
@@ -322,6 +378,11 @@ public class ScenePanel extends JPanel implements GameScreen {
         switchButton.turned = true;
         engine.endSession();
         markerLatched = !markerFailed;
+        waitingForAnswer = false;
+        if (idleTimer != null) {
+            idleTimer.stop();
+        }
+        monitorState = MonitorState.CLOSED;
         print("BUNDLE WRITTEN TO TAPE", true);
         print("LINK CLOSED", true);
         nextButton.setText("BACK TO MENU");
@@ -340,6 +401,10 @@ public class ScenePanel extends JPanel implements GameScreen {
         }
         selectedKeyIndex = position;
         keyButtons[selectedKeyIndex].setBackground(BRASS_LIT.darker());
+        waitingForAnswer = false;
+        if (idleTimer != null) {
+            idleTimer.stop();
+        }
 
         int answeredRung = questionIndex;
         TurnResult result = engine.submitAnswer(choiceId);
@@ -368,12 +433,14 @@ public class ScenePanel extends JPanel implements GameScreen {
             }
             markerFailed = false;
             animateMarkerTo(Math.min(questionIndex, TOTAL_QUESTIONS - 1));
+            monitorState = MonitorState.HAPPY;
         } else {
             print("P" + questionIndex + " REJECTED", false);
             print("UNCOMMITTED UNITS DISCARDED", false);
             markerFailed = true;
             animateMarkerTo(answeredRung);
             scheduleMarkerRollback(answeredRung);
+            monitorState = MonitorState.ALERT;
         }
 
         if (sessionOver) {
@@ -488,6 +555,7 @@ public class ScenePanel extends JPanel implements GameScreen {
         g2.fillRoundRect((int) MONITOR_X, (int) MONITOR_Y, (int) MONITOR_W, (int) MONITOR_H, 24, 24);
         g2.setColor(new Color(0x0e, 0x1d, 0x14));
         g2.fillRoundRect((int) MONITOR_X + 14, (int) MONITOR_Y + 14, (int) MONITOR_W - 28, (int) MONITOR_H - 28, 14, 14);
+        paintMonitor(g2);
 
         g2.dispose();
     }
@@ -527,6 +595,178 @@ public class ScenePanel extends JPanel implements GameScreen {
             g2.setColor(lampsOn[i] ? CHALK : STEEL_DARK.brighter());
             g2.drawString(CAPABILITY_NAMES[i], (int) x, (int) (LAMPS_Y + LAMP_H + 14));
         }
+    }
+
+    // (re)starts the 12s countdown to the idle dvd-bounce; only meaningful while
+    // waitingForAnswer, called again every time showQuestion()/wakeMonitor() applies
+    private void scheduleIdle() {
+        if (idleTimer != null) {
+            idleTimer.stop();
+        }
+        idleTimer = new Timer(IDLE_MS, e -> {
+            if (waitingForAnswer && !sessionOver) {
+                monitorState = MonitorState.IDLE;
+            }
+        });
+        idleTimer.setRepeats(false);
+        idleTimer.start();
+    }
+
+    // ports the mockup's wake(): any press resets the idle clock and, if the
+    // monitor had drifted into its bounce, brings it back to listening
+    private void wakeMonitor() {
+        if (monitorState == MonitorState.IDLE) {
+            monitorState = MonitorState.LISTENING;
+        }
+        if (waitingForAnswer && !sessionOver) {
+            scheduleIdle();
+        }
+    }
+
+    // ~20fps: advances the sine-wave scroll and either the idle dvd-bounce physics
+    // or a gentle settle-to-center bob, plus the time-based blink flag
+    private void tickMonitor() {
+        double dtSec = MONITOR_TICK_MS / 1000.0;
+        waveOffset += (monitorState == MonitorState.ALERT ? 220 : 90) * dtSec;
+
+        long now = System.currentTimeMillis();
+        double blinkPhase = (now % BLINK_CYCLE_MS) / BLINK_CYCLE_MS;
+        eyesClosed = blinkPhase > 0.93 && blinkPhase < 0.95;
+
+        double innerW = MONITOR_W - 28, innerH = MONITOR_H - 28;
+        double minX = 6, maxX = innerW - FACE_W - 6;
+        double minY = 28, maxY = innerH - FACE_H - 10;
+
+        if (monitorState == MonitorState.IDLE) {
+            faceX += faceVX * 60 * dtSec;
+            faceY += faceVY * 44 * dtSec;
+            boolean hit = false;
+            if (faceX < minX) {
+                faceX = minX;
+                faceVX = Math.abs(faceVX);
+                hit = true;
+            }
+            if (faceX > maxX) {
+                faceX = maxX;
+                faceVX = -Math.abs(faceVX);
+                hit = true;
+            }
+            if (faceY < minY) {
+                faceY = minY;
+                faceVY = Math.abs(faceVY);
+                hit = true;
+            }
+            if (faceY > maxY) {
+                faceY = maxY;
+                faceVY = -Math.abs(faceVY);
+                hit = true;
+            }
+            if (hit) {
+                idleTintIndex = (idleTintIndex + 1) % IDLE_TINTS.length;
+                idleTint = IDLE_TINTS[idleTintIndex];
+            }
+        } else {
+            double targetX = (minX + maxX) / 2;
+            double targetY = (minY + maxY) / 2 + Math.sin(now / 700.0) * innerH * 0.03;
+            faceX += (targetX - faceX) * 0.25;
+            faceY += (targetY - faceY) * 0.25;
+        }
+        repaint();
+    }
+
+    // 900ms heart-rate jitter, base rate per state straight off the mockup's table
+    private void tickHeartRate() {
+        int base;
+        switch (monitorState) {
+            case CLOSED:
+                base = 0;
+                break;
+            case ALERT:
+                base = 118;
+                break;
+            case HAPPY:
+                base = 86;
+                break;
+            case IDLE:
+                base = 58;
+                break;
+            default:
+                base = 72;
+        }
+        heartRate = base == 0 ? 0 : base + (int) (Math.random() * 7) - 3;
+        repaint();
+    }
+
+    private String monitorLabel() {
+        switch (monitorState) {
+            case HAPPY:
+                return "STABLE";
+            case ALERT:
+                return "REJECTED";
+            case CLOSED:
+                return "LINK CLOSED";
+            case IDLE:
+                return "IDLE";
+            default:
+                return "LISTENING";
+        }
+    }
+
+    // face-led identity (PlayPanel.AiMonitorPanel's brass frame + eye/mouth arcs),
+    // extended with the mockup's blink/sine-wave/idle-bounce behavior. the face and
+    // wave shapes approximate the mockup's svg paths rather than parsing them --
+    // the state machine and timing above are the ported part, not this geometry
+    private void paintMonitor(Graphics2D g2) {
+        double innerX = MONITOR_X + 14, innerY = MONITOR_Y + 14;
+        double innerW = MONITOR_W - 28, innerH = MONITOR_H - 28;
+        Color tint = monitorState == MonitorState.ALERT ? PHOSPHOR_WARN
+                : monitorState == MonitorState.IDLE ? idleTint : PHOSPHOR;
+
+        g2.setFont(FONT_LADDER);
+        g2.setColor(tint);
+        g2.drawString("CORE / " + monitorLabel(), (int) innerX + 8, (int) innerY + 16);
+        String hr = "HR " + String.format("%03d", heartRate);
+        FontMetrics fm = g2.getFontMetrics();
+        g2.drawString(hr, (int) (innerX + innerW - fm.stringWidth(hr) - 8), (int) innerY + 16);
+
+        g2.setColor(tint);
+        g2.setStroke(new BasicStroke(1.6f));
+        GeneralPath wave = new GeneralPath();
+        double waveY = innerY + innerH * 0.72;
+        double waveAmp = innerH * 0.08;
+        for (double x = 0; x <= innerW; x += 4) {
+            double y = waveY + Math.sin((x + waveOffset) * 0.07) * waveAmp;
+            if (x == 0) {
+                wave.moveTo(innerX + x, y);
+            } else {
+                wave.lineTo(innerX + x, y);
+            }
+        }
+        g2.draw(wave);
+
+        Composite oldComposite = g2.getComposite();
+        if (monitorState == MonitorState.CLOSED) {
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.35f));
+        }
+        g2.setColor(tint);
+        g2.setStroke(new BasicStroke(2.5f));
+        double fx = innerX + faceX, fy = innerY + faceY;
+        boolean happy = monitorState == MonitorState.HAPPY;
+        boolean alert = monitorState == MonitorState.ALERT;
+        double eyeH = happy ? FACE_H * 0.12 : eyesClosed ? FACE_H * 0.04 : FACE_H * 0.2;
+        g2.drawOval((int) (fx + FACE_W * 0.18), (int) (fy + FACE_H * 0.12), (int) (FACE_W * 0.14), (int) eyeH);
+        g2.drawOval((int) (fx + FACE_W * 0.68), (int) (fy + FACE_H * 0.12), (int) (FACE_W * 0.14), (int) eyeH);
+        int mouthX = (int) (fx + FACE_W * 0.25);
+        int mouthW = (int) (FACE_W * 0.5);
+        int mouthH = (int) (FACE_H * 0.3);
+        if (alert) {
+            g2.drawArc(mouthX, (int) (fy + FACE_H * 0.6), mouthW, mouthH, 20, 140);
+        } else if (happy) {
+            g2.drawArc(mouthX, (int) (fy + FACE_H * 0.52), mouthW, mouthH, 200, 140);
+        } else {
+            g2.drawLine(mouthX, (int) (fy + FACE_H * 0.66), mouthX + mouthW, (int) (fy + FACE_H * 0.66));
+        }
+        g2.setComposite(oldComposite);
     }
 
     private void paintLadder(Graphics2D g2) {
