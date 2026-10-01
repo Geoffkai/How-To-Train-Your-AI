@@ -482,6 +482,21 @@ public class ScenePanel extends JPanel implements GameScreen {
 
         int answeredRung = questionIndex;
         TurnResult result = engine.submitAnswer(choiceId);
+        if (result.isRetry()) {
+            // Override absorbed the miss. The engine keeps the same question and
+            // local ladder state; re-arm only the answer keys for the retry.
+            print("OVERRIDE ENGAGED: RETRY AUTHORIZED", true);
+            for (JButton keyButton : keyButtons) {
+                keyButton.setEnabled(true);
+                keyButton.setBackground(BRASS_LIT);
+            }
+            selectedKeyIndex = -1;
+            waitingForAnswer = true;
+            monitorState = MonitorState.LISTENING;
+            scheduleIdle();
+            repaint();
+            return;
+        }
         ladderOutcomes[questionIndex] = result.isCorrect() ? TAPE_GREEN : TAPE_RED;
         questionIndex++;
         sessionOver = result.isGameOver();
