@@ -154,18 +154,33 @@ public class ScenePanel extends JPanel implements GameScreen {
     // the taper field below): .monitor 3deg, .log -6deg, .card 8deg
     private static final double MONITOR_ROTATE_DEG = 3, LOG_ROTATE_DEG = -6, CARD_ROTATE_DEG = 8;
 
-    // approximates .desk's perspective(60cqw) rotateX(17deg) (java2d has no true 3d
-    // transform) by reusing the desk polygon's own established taper below: narrower
-    // at the top (y=720, width 1320), wider at the bottom (y=1000, width 1728), both
-    // centered on x=800. every desk-row shape/button interpolates against this same
+    // exact closed form for .desk's perspective(60cqw) rotateX(17deg) (java2d has no
+    // true 3d transform, so this reproduces it by formula instead). DESK_BOTTOM_Y is
+    // the CSS transform-origin:bottom pivot -- .desk's own box bottom (DESK_Y+DESK_H),
+    // which .desk{bottom:-6%} places below the visible 1000-tall canvas, not at y=1000.
+    // width(y) = DESK_BOTTOM_W / (1 + k*(DESK_BOTTOM_Y - y)), k = sin(rotateX)/perspective,
+    // both centered on x=800. Every desk-row shape/button interpolates against this same
     // field so the whole assembly tapers consistently, not just the background.
-    private static final double DESK_TOP_Y = 720, DESK_BOTTOM_Y = 1000;
-    private static final double DESK_TOP_W = 1320, DESK_BOTTOM_W = 1728;
+    //
+    // Derived from the live mockup's own computed transform matrix (getComputedStyle
+    // .desk .transform -> matrix3d(...), decoded: rotateX=17deg, perspective=0.6x the
+    // container width, exactly matching the CSS) and cross-checked against getBoundingClientRect
+    // corner geometry for the desk, a key, and the switch (all matched within ~1px).
+    // An earlier version of this file used a linear top/bottom width lerp that looked
+    // plausible but overstated the real taper by roughly 2.6x -- confirmed by this same
+    // live-DOM measurement after the lerp version was first reported as looking untapered,
+    // then as looking right, from screenshots that were too coarse to catch a few-pixel
+    // shift either way. Don't re-derive this from a screenshot; re-derive it from
+    // getComputedStyle/getBoundingClientRect on the live mockup if it's ever in doubt again.
+    private static final double DESK_TOP_Y = 720, DESK_BOTTOM_Y = DESK_Y + DESK_H;
+    private static final double DESK_BOTTOM_W = 1728;
     private static final double DESK_CENTER_X = 800;
+    private static final double DESK_ROTATE_DEG = 17;
+    private static final double DESK_PERSPECTIVE = 0.6 * LOGICAL_W;
+    private static final double DESK_TAPER_K = Math.sin(Math.toRadians(DESK_ROTATE_DEG)) / DESK_PERSPECTIVE;
 
     private double deskWidthAt(double y) {
-        double t = (y - DESK_TOP_Y) / (DESK_BOTTOM_Y - DESK_TOP_Y);
-        return DESK_TOP_W + t * (DESK_BOTTOM_W - DESK_TOP_W);
+        return DESK_BOTTOM_W / (1 + DESK_TAPER_K * (DESK_BOTTOM_Y - y));
     }
 
     // an untapered desk-relative rect (x,y,w,h) -- as already computed from the
@@ -662,13 +677,17 @@ public class ScenePanel extends JPanel implements GameScreen {
         g2.setColor(WOOD_DARK);
         g2.fillRect((int) LEDGE_X, (int) LEDGE_Y, (int) LEDGE_W, (int) LEDGE_H);
 
-        // foreground: operator's desk, faked perspective since java2d has no true tilt
+        // foreground: operator's desk, faked perspective since java2d has no true tilt.
+        // corners come from deskWidthAt() (see its comment), not hand-measured points --
+        // the bottom pair sits at DESK_BOTTOM_Y (below the visible canvas by design),
+        // clipped by the panel's own bounds same as the mockup's .desk bleed.
         g2.setColor(WOOD_DARK);
+        double deskTopW = deskWidthAt(DESK_TOP_Y);
         Polygon desk = new Polygon();
-        desk.addPoint(140, 720);
-        desk.addPoint(1460, 720);
-        desk.addPoint(1664, 1000);
-        desk.addPoint(-64, 1000);
+        desk.addPoint((int) (DESK_CENTER_X - deskTopW / 2), (int) DESK_TOP_Y);
+        desk.addPoint((int) (DESK_CENTER_X + deskTopW / 2), (int) DESK_TOP_Y);
+        desk.addPoint((int) (DESK_CENTER_X + DESK_BOTTOM_W / 2), (int) DESK_BOTTOM_Y);
+        desk.addPoint((int) (DESK_CENTER_X - DESK_BOTTOM_W / 2), (int) DESK_BOTTOM_Y);
         g2.fillPolygon(desk);
 
         // decorative backing panel behind the keybank/next row
