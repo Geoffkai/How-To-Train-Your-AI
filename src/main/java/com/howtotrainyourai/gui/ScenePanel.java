@@ -49,6 +49,11 @@ public class ScenePanel extends JPanel implements GameScreen {
     // mockup .lmark.failed / .lmark.latched literal colors (not css vars there either)
     private static final Color MARKER_FAIL = Color.decode("#c97a62");
     private static final Color MARKER_LATCH = Color.decode("#f4e6a8");
+    private static final Color COLD_LIGHT = Color.decode("#cfeee2");
+
+    // capability unlock order, matches GameEngineImpl.CAPABILITY_UNLOCKS (Q3/5/8/10/13/15)
+    private static final String[] CAPABILITY_NAMES = {
+            "MEMORY", "UNDERSTANDING", "APPLICATION", "ANALYSIS", "EVALUATION", "SYNTHESIZE" };
 
     private static final Font FONT_LADDER = new Font(Font.MONOSPACED, Font.BOLD, 11);
     private static final Font FONT_PROMPT = new Font(Font.MONOSPACED, Font.BOLD, 20);
@@ -134,6 +139,7 @@ public class ScenePanel extends JPanel implements GameScreen {
     private Timer markerRollbackTimer;
     // index of the key that was pressed to answer the current question, -1 if none
     private int selectedKeyIndex = -1;
+    private final boolean[] lampsOn = new boolean[CAPABILITY_NAMES.length];
     // the board only pulls a fresh question on showQuestion() (start / Next click),
     // never mid-turn, so the just-answered prompt stays up until the player advances
     private Question displayedQuestion;
@@ -254,6 +260,7 @@ public class ScenePanel extends JPanel implements GameScreen {
         markerFailed = false;
         markerLatched = false;
         switchButton.turned = false;
+        java.util.Arrays.fill(lampsOn, false);
         print("BAY 04 LINK OPEN", true);
         print("AWAITING HUMAN VERIFIER", true);
         showQuestion();
@@ -343,7 +350,13 @@ public class ScenePanel extends JPanel implements GameScreen {
         if (result.isCorrect()) {
             print("P" + questionIndex + " VALIDATED +" + result.getTokensAwarded(), true);
             if (result.isCapabilityUnlocked()) {
-                print(result.getCapabilityName().toUpperCase() + " RESTORED", true);
+                String capability = result.getCapabilityName().toUpperCase();
+                print(capability + " RESTORED", true);
+                for (int lampIndex = 0; lampIndex < CAPABILITY_NAMES.length; lampIndex++) {
+                    if (CAPABILITY_NAMES[lampIndex].equals(capability)) {
+                        lampsOn[lampIndex] = true;
+                    }
+                }
             }
             markerFailed = false;
             animateMarkerTo(Math.min(questionIndex, TOTAL_QUESTIONS - 1));
@@ -389,11 +402,7 @@ public class ScenePanel extends JPanel implements GameScreen {
         g2.fillRect(0, 0, (int) LOGICAL_W, (int) LOGICAL_H);
         g2.setColor(CEILING);
         g2.fillRect(0, 0, (int) LOGICAL_W, (int) CEILING_H);
-        g2.setColor(STEEL_DARK);
-        double lampGap = (LAMPS_W - 6 * LAMP_W) / 5;
-        for (int i = 0; i < 6; i++) {
-            g2.fillRect((int) (LAMPS_X + i * (LAMP_W + lampGap)), (int) LAMPS_Y, (int) LAMP_W, (int) LAMP_H);
-        }
+        paintLamps(g2);
         g2.setColor(MINT);
         g2.fillRect((int) CAB_L_X, (int) CAB_L_Y, (int) CAB_L_W, (int) CAB_L_H);
         g2.setColor(STEEL);
@@ -479,6 +488,20 @@ public class ScenePanel extends JPanel implements GameScreen {
         for (String line : lines) {
             g2.drawString(line, (int) LOG_X + 10, ly);
             ly += 16;
+        }
+    }
+
+    // one lamp per capability, lighting up as GameEngineImpl reports an unlock.
+    // no glow cone/gradient here, that's phase-4 texture territory
+    private void paintLamps(Graphics2D g2) {
+        double lampGap = (LAMPS_W - CAPABILITY_NAMES.length * LAMP_W) / (CAPABILITY_NAMES.length - 1);
+        g2.setFont(FONT_LADDER);
+        for (int i = 0; i < CAPABILITY_NAMES.length; i++) {
+            double x = LAMPS_X + i * (LAMP_W + lampGap);
+            g2.setColor(lampsOn[i] ? COLD_LIGHT : STEEL_DARK);
+            g2.fillRect((int) x, (int) LAMPS_Y, (int) LAMP_W, (int) LAMP_H);
+            g2.setColor(lampsOn[i] ? CHALK : STEEL_DARK.brighter());
+            g2.drawString(CAPABILITY_NAMES[i], (int) x, (int) (LAMPS_Y + LAMP_H + 14));
         }
     }
 
