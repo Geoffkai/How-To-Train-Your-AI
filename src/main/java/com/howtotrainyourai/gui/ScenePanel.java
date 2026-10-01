@@ -74,6 +74,8 @@ public class ScenePanel extends JPanel implements GameScreen {
     private static final int MARKER_ROLLBACK_MS = 900;
     private static final double BOARD_X = 208, BOARD_Y = 205, BOARD_W = 1136, BOARD_H = 440;
     private static final double LEDGE_X = 195, LEDGE_Y = 673, LEDGE_W = 1162, LEDGE_H = 24;
+    private static final int LINE_HEIGHT = 14;
+    private static final int PAPER_FEED_MS = 180;
     private static final double MONITOR_X = 1288, MONITOR_Y = 610, MONITOR_W = 272, MONITOR_H = 270;
     private static final double BACK_X = 20, BACK_Y = 20, BACK_W = 80, BACK_H = 30;
 
@@ -124,6 +126,8 @@ public class ScenePanel extends JPanel implements GameScreen {
     private final JButton backButton;
     private final List<String> paperLines = new ArrayList<>();
     private final List<Boolean> paperGood = new ArrayList<>();
+    private Timer paperFeedTimer;
+    private double paperFeedT = 1;
 
     private GameEngine engine;
     private int questionIndex;
@@ -255,6 +259,10 @@ public class ScenePanel extends JPanel implements GameScreen {
         if (markerRollbackTimer != null) {
             markerRollbackTimer.stop();
         }
+        if (paperFeedTimer != null) {
+            paperFeedTimer.stop();
+        }
+        paperFeedT = 1;
         markerPos = 0;
         markerTarget = 0;
         markerFailed = false;
@@ -384,10 +392,26 @@ public class ScenePanel extends JPanel implements GameScreen {
     private void print(String text, boolean good) {
         paperLines.add(text);
         paperGood.add(good);
-        while (paperLines.size() > 5) {
+        // generous ceiling against unbounded growth, not a visual-capacity cap --
+        // paintPaper() decides how many lines actually show
+        while (paperLines.size() > 200) {
             paperLines.remove(0);
             paperGood.remove(0);
         }
+
+        if (paperFeedTimer != null) {
+            paperFeedTimer.stop();
+        }
+        paperFeedT = 0;
+        long feedStart = System.currentTimeMillis();
+        paperFeedTimer = new Timer(16, e -> {
+            paperFeedT = Math.min(1, (System.currentTimeMillis() - feedStart) / (double) PAPER_FEED_MS);
+            repaint();
+            if (paperFeedT >= 1) {
+                paperFeedTimer.stop();
+            }
+        });
+        paperFeedTimer.start();
     }
 
     @Override
@@ -707,11 +731,15 @@ public class ScenePanel extends JPanel implements GameScreen {
     // zone above it (mockup's .paper), not inside the compact housing itself
     private void paintPaper(Graphics2D g2) {
         g2.setFont(FONT_PAPER);
+        int maxVisible = (int) (PAPER_H / LINE_HEIGHT);
         int y = (int) TELETYPE_Y - 8;
-        for (int i = paperLines.size() - 1; i >= 0; i--) {
+        int shown = 0;
+        for (int i = paperLines.size() - 1; i >= 0 && shown < maxVisible; i--, shown++) {
+            // the newest line slides up into place instead of just appearing
+            double slide = shown == 0 ? (1 - paperFeedT) * LINE_HEIGHT : 0;
             g2.setColor(paperGood.get(i) ? TAPE_GREEN : TAPE_RED);
-            g2.drawString(paperLines.get(i), (int) TELETYPE_X + 10, y);
-            y -= 14;
+            g2.drawString(paperLines.get(i), (int) TELETYPE_X + 10, (int) (y + slide));
+            y -= LINE_HEIGHT;
         }
     }
 
