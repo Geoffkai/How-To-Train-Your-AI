@@ -76,6 +76,7 @@ public class ScenePanel extends JPanel implements GameScreen {
     // keybank: left:31%/bottom:30% of the desk box (not 25%/40% -- that was the
     // superseded draft's position)
     private static final double KEYS_X = 472, KEYS_Y = 862, KEY_W = 115, KEY_H = 96, KEY_GAP = 21;
+    private static final double KEY_DEPRESS = 10;
     // next probe: left:68.2cqw/bottom:6.4cqw of the desk box -- moved into the answer
     // row per the handoff's physical-reach fix, lands in the same row as the keys
     private static final double NEXT_X = 1027, NEXT_Y = 862, NEXT_W = 144, NEXT_H = 96;
@@ -113,7 +114,7 @@ public class ScenePanel extends JPanel implements GameScreen {
     private final JButton[] lifelineButtons = new JButton[3];
     private final JButton[] keyButtons = new JButton[4];
     private final JButton nextButton;
-    private final JButton switchButton;
+    private final SwitchButton switchButton;
     private final JButton backButton;
     private final List<String> paperLines = new ArrayList<>();
     private final List<Boolean> paperGood = new ArrayList<>();
@@ -130,6 +131,8 @@ public class ScenePanel extends JPanel implements GameScreen {
     private boolean markerLatched;
     private Timer markerAnimTimer;
     private Timer markerRollbackTimer;
+    // index of the key that was pressed to answer the current question, -1 if none
+    private int selectedKeyIndex = -1;
     // the board only pulls a fresh question on showQuestion() (start / Next click),
     // never mid-turn, so the just-answered prompt stays up until the player advances
     private Question displayedQuestion;
@@ -171,7 +174,7 @@ public class ScenePanel extends JPanel implements GameScreen {
         });
         add(nextButton);
 
-        switchButton = flatButton("TRAIN/SECURE", FONT_LABEL, BRASS, WOOD_DARK);
+        switchButton = new SwitchButton();
         switchButton.addActionListener(e -> pullSwitch());
         add(switchButton);
 
@@ -217,7 +220,8 @@ public class ScenePanel extends JPanel implements GameScreen {
             place(lifelineButtons[i], LIFELINE_X[i], LIFELINE_Y, LIFELINE_W[i], LIFELINE_H);
         }
         for (int i = 0; i < keyButtons.length; i++) {
-            place(keyButtons[i], KEYS_X + i * (KEY_W + KEY_GAP), KEYS_Y, KEY_W, KEY_H);
+            double y = KEYS_Y + (i == selectedKeyIndex ? KEY_DEPRESS : 0);
+            place(keyButtons[i], KEYS_X + i * (KEY_W + KEY_GAP), y, KEY_W, KEY_H);
         }
         place(nextButton, NEXT_X, NEXT_Y, NEXT_W, NEXT_H);
         place(switchButton, SWITCH_X, SWITCH_Y, SWITCH_W, SWITCH_H);
@@ -244,6 +248,7 @@ public class ScenePanel extends JPanel implements GameScreen {
         markerTarget = 0;
         markerFailed = false;
         markerLatched = false;
+        switchButton.turned = false;
         print("BAY 04 LINK OPEN", true);
         print("AWAITING HUMAN VERIFIER", true);
         showQuestion();
@@ -254,6 +259,7 @@ public class ScenePanel extends JPanel implements GameScreen {
         displayedIndex = questionIndex;
         for (JButton keyButton : keyButtons) {
             keyButton.setEnabled(true);
+            keyButton.setBackground(BRASS_LIT);
         }
         for (JButton lifelineButton : lifelineButtons) {
             lifelineButton.setEnabled(true);
@@ -261,7 +267,8 @@ public class ScenePanel extends JPanel implements GameScreen {
         switchButton.setEnabled(true);
         nextButton.setText("NEXT PROBE");
         nextButton.setEnabled(false);
-        repaint();
+        selectedKeyIndex = -1;
+        relayout();
     }
 
     private void pullLifeline(String label) {
@@ -290,6 +297,7 @@ public class ScenePanel extends JPanel implements GameScreen {
             lifelineButton.setEnabled(false);
         }
         switchButton.setEnabled(false);
+        switchButton.turned = true;
         engine.endSession();
         markerLatched = !markerFailed;
         print("BUNDLE WRITTEN TO TAPE", true);
@@ -308,6 +316,8 @@ public class ScenePanel extends JPanel implements GameScreen {
         for (JButton keyButton : keyButtons) {
             keyButton.setEnabled(false);
         }
+        selectedKeyIndex = position;
+        keyButtons[selectedKeyIndex].setBackground(BRASS_LIT.darker());
 
         int answeredRung = questionIndex;
         TurnResult result = engine.submitAnswer(choiceId);
@@ -340,7 +350,7 @@ public class ScenePanel extends JPanel implements GameScreen {
             nextButton.setText("NEXT PROBE");
         }
         nextButton.setEnabled(true);
-        repaint();
+        relayout();
     }
 
     private void print(String text, boolean good) {
@@ -589,6 +599,52 @@ public class ScenePanel extends JPanel implements GameScreen {
             g2.setColor(paperGood.get(i) ? TAPE_GREEN : TAPE_RED);
             g2.drawString(paperLines.get(i), (int) TELETYPE_X + 10, y);
             y -= 14;
+        }
+    }
+
+    // ports the mockup's .switch .cyl/.key-bit: a brass disc with a bit that
+    // flips angle on pullSwitch(), labels dimming on whichever side isn't active
+    private static class SwitchButton extends JButton {
+        boolean turned;
+
+        SwitchButton() {
+            setText("");
+            setFocusPainted(false);
+            setBorderPainted(false);
+            setOpaque(true);
+            setBackground(BRASS);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int w = getWidth();
+            int h = getHeight();
+            g2.setFont(FONT_LABEL);
+            FontMetrics fm = g2.getFontMetrics();
+            g2.setColor(turned ? WOOD_DARK.brighter() : WOOD_DARK);
+            g2.drawString("TRAIN", 6, fm.getAscent() + 4);
+            String secure = "SECURE";
+            g2.setColor(turned ? WOOD_DARK : WOOD_DARK.brighter());
+            g2.drawString(secure, w - fm.stringWidth(secure) - 6, fm.getAscent() + 4);
+
+            int cx = w / 2;
+            int cy = (int) (h * 0.62);
+            int r = Math.min(w, h) / 5;
+            g2.setColor(BRASS_OX);
+            g2.fillOval(cx - r, cy - r, r * 2, r * 2);
+
+            double angle = Math.toRadians(turned ? 40 : -40);
+            int len = (int) (r * 1.6);
+            int dx = (int) (Math.cos(angle) * len);
+            int dy = (int) (Math.sin(angle) * len);
+            g2.setColor(CHALK);
+            g2.setStroke(new BasicStroke(Math.max(2f, r / 4f)));
+            g2.drawLine(cx - dx, cy - dy, cx + dx, cy + dy);
+            g2.dispose();
         }
     }
 }
