@@ -9,6 +9,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.awt.geom.GeneralPath;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -137,6 +138,10 @@ public class ScenePanel extends JPanel implements GameScreen {
     // never mid-turn, so the just-answered prompt stays up until the player advances
     private Question displayedQuestion;
     private int displayedIndex;
+    // chalk marks on the board: null/false until the displayed question is answered
+    private String displayedAnsweredChoiceId;
+    private String displayedCorrectChoiceId;
+    private boolean displayedWasCorrect;
     private double scale = 1;
     private double offsetX, offsetY;
 
@@ -268,6 +273,8 @@ public class ScenePanel extends JPanel implements GameScreen {
         nextButton.setText("NEXT PROBE");
         nextButton.setEnabled(false);
         selectedKeyIndex = -1;
+        displayedAnsweredChoiceId = null;
+        displayedCorrectChoiceId = null;
         relayout();
     }
 
@@ -324,6 +331,14 @@ public class ScenePanel extends JPanel implements GameScreen {
         ladderOutcomes[questionIndex] = result.isCorrect() ? TAPE_GREEN : TAPE_RED;
         questionIndex++;
         sessionOver = result.isGameOver();
+
+        displayedAnsweredChoiceId = choiceId;
+        displayedWasCorrect = result.isCorrect();
+        for (Choice choice : displayedQuestion.getChoices()) {
+            if (displayedQuestion.isCorrect(choice.getChoiceId())) {
+                displayedCorrectChoiceId = choice.getChoiceId();
+            }
+        }
 
         if (result.isCorrect()) {
             print("P" + questionIndex + " VALIDATED +" + result.getTokensAwarded(), true);
@@ -557,37 +572,112 @@ public class ScenePanel extends JPanel implements GameScreen {
         drawWrapped(g2, question.getText(), (int) BOARD_X + 24, (int) BOARD_Y + 70, (int) BOARD_W - 48, 26);
 
         g2.setFont(FONT_ANSWER);
+        FontMetrics answerMetrics = g2.getFontMetrics();
         List<Choice> choices = question.getChoices();
-        int rowY = (int) BOARD_Y + 200;
-        for (int i = 0; i < choices.size(); i++) {
-            g2.setColor(CHALK_YELLOW);
-            String letter = "ABCD".charAt(i) + ". ";
-            g2.drawString(letter, (int) BOARD_X + 24 + (i % 2) * (int) (BOARD_W / 2), rowY + (i / 2) * 50);
-            g2.setColor(CHALK);
-            g2.drawString(choices.get(i).getText(), (int) BOARD_X + 24 + 30 + (i % 2) * (int) (BOARD_W / 2),
-                    rowY + (i / 2) * 50);
+        int colW = (int) (BOARD_W / 2);
+        int letterW = 30;
+        int textMaxWidth = colW - letterW - 24;
+        int lineHeight = 22;
+        int rowGap = 14;
+        int cy = (int) BOARD_Y + 200;
+        // two rows of two, same as the mockup's grid -- a row's height follows
+        // whichever of its two choices wraps to the most lines, so a long answer
+        // doesn't run into the row below it
+        for (int row = 0; row < 2; row++) {
+            List<List<String>> rowLines = new ArrayList<>();
+            int lineCount = 1;
+            for (int col = 0; col < 2; col++) {
+                List<String> lines = wrapText(answerMetrics, choices.get(row * 2 + col).getText(), textMaxWidth);
+                rowLines.add(lines);
+                lineCount = Math.max(lineCount, lines.size());
+            }
+            for (int col = 0; col < 2; col++) {
+                int i = row * 2 + col;
+                int cx = (int) BOARD_X + 24 + col * colW;
+                paintChoice(g2, answerMetrics, choices.get(i), "ABCD".charAt(i), cx, cy, rowLines.get(col),
+                        letterW, lineHeight);
+            }
+            cy += lineCount * lineHeight + rowGap;
         }
     }
 
+    private void paintChoice(Graphics2D g2, FontMetrics fm, Choice choice, char letter, int cx, int cy,
+            List<String> lines, int letterW, int lineHeight) {
+        g2.setColor(CHALK_YELLOW);
+        g2.drawString(letter + ".", cx, cy);
+        g2.setColor(CHALK);
+        int lineY = cy;
+        int maxLineWidth = 0;
+        for (String line : lines) {
+            g2.drawString(line, cx + letterW, lineY);
+            maxLineWidth = Math.max(maxLineWidth, fm.stringWidth(line));
+            lineY += lineHeight;
+        }
+
+        if (displayedAnsweredChoiceId != null) {
+            Rectangle markRect = new Rectangle(cx - 10, cy - 18, letterW + maxLineWidth + 20,
+                    lines.size() * lineHeight + 10);
+            String choiceId = choice.getChoiceId();
+            if (choiceId.equals(displayedCorrectChoiceId)) {
+                drawChalkCircle(g2, markRect);
+            }
+            if (!displayedWasCorrect && choiceId.equals(displayedAnsweredChoiceId)) {
+                drawChalkStrike(g2, markRect);
+            }
+        }
+    }
+
+    // ports the mockup's .mark svg (wobbly hand-drawn circle/strike), approximated
+    // with a few cubic curves instead of parsing the mockup's bezier path verbatim
+    private void drawChalkCircle(Graphics2D g2, Rectangle r) {
+        GeneralPath path = new GeneralPath();
+        double x = r.x, y = r.y, w = r.width, h = r.height;
+        path.moveTo(x + w * 0.08, y + h * 0.55);
+        path.curveTo(x - w * 0.04, y + h * 0.2, x + w * 0.5, y - h * 0.1, x + w * 0.96, y + h * 0.25);
+        path.curveTo(x + w * 1.08, y + h * 0.55, x + w * 0.7, y + h * 1.05, x + w * 0.3, y + h * 0.95);
+        path.curveTo(x + w * 0.05, y + h * 0.9, x, y + h * 0.5, x + w * 0.22, y + h * 0.22);
+        g2.setColor(CHALK_YELLOW);
+        g2.setStroke(new BasicStroke(2.4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g2.draw(path);
+    }
+
+    private void drawChalkStrike(Graphics2D g2, Rectangle r) {
+        GeneralPath path = new GeneralPath();
+        path.moveTo(r.x - r.width * 0.03, r.y + r.height * 0.58);
+        path.curveTo(r.x + r.width * 0.3, r.y + r.height * 0.48, r.x + r.width * 0.7, r.y + r.height * 0.55,
+                r.x + r.width * 0.97, r.y + r.height * 0.42);
+        g2.setColor(TAPE_RED.brighter());
+        g2.setStroke(new BasicStroke(2.4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g2.draw(path);
+    }
+
     private void drawWrapped(Graphics2D g2, String text, int x, int y, int maxWidth, int lineHeight) {
-        FontMetrics fm = g2.getFontMetrics();
-        StringBuilder line = new StringBuilder();
+        g2.setColor(CHALK);
         int curY = y;
+        for (String line : wrapText(g2.getFontMetrics(), text, maxWidth)) {
+            g2.drawString(line, x, curY);
+            curY += lineHeight;
+        }
+    }
+
+    // greedy word wrap, shared by the prompt and the answer choices so neither
+    // overflows its column/board width
+    private List<String> wrapText(FontMetrics fm, String text, int maxWidth) {
+        List<String> lines = new ArrayList<>();
+        StringBuilder line = new StringBuilder();
         for (String word : text.split(" ")) {
             String candidate = line.length() == 0 ? word : line + " " + word;
             if (fm.stringWidth(candidate) > maxWidth && line.length() > 0) {
-                g2.setColor(CHALK);
-                g2.drawString(line.toString(), x, curY);
-                curY += lineHeight;
+                lines.add(line.toString());
                 line = new StringBuilder(word);
             } else {
                 line = new StringBuilder(candidate);
             }
         }
         if (line.length() > 0) {
-            g2.setColor(CHALK);
-            g2.drawString(line.toString(), x, curY);
+            lines.add(line.toString());
         }
+        return lines;
     }
 
     // the printed strip feeds up out of the housing's top edge into its own taller
