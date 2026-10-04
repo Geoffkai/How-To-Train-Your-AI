@@ -36,6 +36,11 @@ public class TurnResult {
     // GameEngine.endSession(), not something submitAnswer() reports.
     private final boolean gameOver;
 
+    // True if the answer was wrong but the Override lifeline absorbed it:
+    // no tokens lost, the session goes on, and the SAME question is still
+    // current -- the player gets one more pick. Always false when correct.
+    private final boolean retry;
+
     /**
      * @param correct            was the submitted choice right?
      * @param tokensAwarded      tokens gained this turn
@@ -46,12 +51,21 @@ public class TurnResult {
      */
     public TurnResult(boolean correct, int tokensAwarded, int runningTotal,
             boolean capabilityUnlocked, String capabilityName, boolean gameOver) {
+        this(correct, tokensAwarded, runningTotal, capabilityUnlocked, capabilityName, gameOver, false);
+    }
+
+    /**
+     * Same as above, plus whether Override turned this wrong answer into a retry.
+     */
+    public TurnResult(boolean correct, int tokensAwarded, int runningTotal,
+            boolean capabilityUnlocked, String capabilityName, boolean gameOver, boolean retry) {
         this.correct = correct;
         this.tokensAwarded = tokensAwarded;
         this.runningTotal = runningTotal;
         this.capabilityUnlocked = capabilityUnlocked;
         this.capabilityName = capabilityName;
         this.gameOver = gameOver;
+        this.retry = retry;
     }
 
     public boolean isCorrect() {
@@ -76,5 +90,9 @@ public class TurnResult {
 
     public boolean isGameOver() {
         return gameOver;
+    }
+
+    public boolean isRetry() {
+        return retry;
     }
 }

@@ -8,12 +8,14 @@ import java.util.List;
  * tracking of the current question or submitted answers; that's
  * GameEngine's job, not this one's.
  *
- * Implementations (see CONTEXT.md for the full contract):
- *  - FakeQuestionSource (Week 1, this repo) — hardcoded dummy data, used to
- *    prove GameEngine/TerminalGameLoop work before real data exists.
- *  - The real implementation (R2, Week 3) — reads MCQ/*.csv (pipe-delimited,
- *    see CONTEXT.md §3), picks an equal number of questions per module
- *    (Assignment Guide #1 item 1d), and shuffles each question's choices.
+ * Implementation (see CONTEXT.md for the full contract):
+ * - data.CsvQuestionSource (R2) — reads the pipe-delimited question bank
+ * (CONTEXT.md 3), picks an equal number of questions per module
+ * (Assignment Guide #1 item 1d), and shuffles each question's choices.
+ *
+ * Kept as an interface even with one implementation: it's the seam that lets
+ * the engine be exercised against a controlled bank without the GUI or the
+ * real CSV, and it's what keeps `engine` from importing `data`.
  */
 public interface QuestionSource {
 
