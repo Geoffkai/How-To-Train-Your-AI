@@ -3,10 +3,6 @@ package com.howtotrainyourai.gui;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -51,20 +47,6 @@ public class SplashScreenPanel extends JPanel {
 
         loadLabImage();
 
-        addMouseListener(new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                advanceToMenu();
-            }
-        });
-
-        addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                advanceToMenu();
-            }
-        });
-
         sequenceTimer = new Timer(50, e -> updateSequence());
         sequenceTimer.start();
     }
@@ -72,9 +54,6 @@ public class SplashScreenPanel extends JPanel {
     private void loadLabImage() {
         String[] classpathAttempts = {
             "/images/splashscreen.png",
-            "/images/splashscreen.png.png",
-            "/images/splashscreen.jpeg",
-            "/images/splashscreen.jpg"
         };
 
         for (String cp : classpathAttempts) {
@@ -118,7 +97,7 @@ public class SplashScreenPanel extends JPanel {
     private void updateSequence() {
         ticks++;
 
-        // Extended power surge & flicker sequence (~2.5 seconds)
+        // Power surge & flicker sequence
         if (!powerStabilized) {
             if (ticks < 12) {
                 darknessAlpha = random.nextInt(35) + 220;
@@ -135,13 +114,11 @@ public class SplashScreenPanel extends JPanel {
                 powerStabilized = true;
             }
         } else {
-            // Reveal line-by-line
             if (ticks % 7 == 0 && scriptIndex < bootScript.length) {
                 renderedLines.add(bootScript[scriptIndex]);
                 scriptIndex++;
             }
 
-            // Quick advance: waits only ~1 second after last line prints
             if (scriptIndex >= bootScript.length && ticks > 145) {
                 advanceToMenu();
             }
@@ -167,18 +144,18 @@ public class SplashScreenPanel extends JPanel {
         int w = getWidth();
         int h = getHeight();
 
-        // 1. Scaled lab scene
+        // Scaled lab scene
         if (backgroundImage != null) {
             g2.drawImage(backgroundImage, 0, 0, w, h, this);
         }
 
-        // 2. Power flicker overlay
+        // Power flicker overlay
         if (darknessAlpha > 0) {
             g2.setColor(new Color(0, 0, 0, Math.min(255, darknessAlpha)));
             g2.fillRect(0, 0, w, h);
         }
 
-        // 3. Render centered chalkboard title card
+        // Render centered chalkboard title card
         if (powerStabilized) {
             int boardCenterX = (w / 2) + 5;
             int boardTop = (int) (h * 0.370); 
