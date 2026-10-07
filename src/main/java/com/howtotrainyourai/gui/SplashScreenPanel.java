@@ -3,10 +3,6 @@ package com.howtotrainyourai.gui;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -51,19 +47,7 @@ public class SplashScreenPanel extends JPanel {
 
         loadLabImage();
 
-        addMouseListener(new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                advanceToMenu();
-            }
-        });
-
-        addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                advanceToMenu();
-            }
-        });
+        // Mouse and key listeners removed so the splash screen plays in full without skipping
 
         sequenceTimer = new Timer(50, e -> updateSequence());
         sequenceTimer.start();
@@ -72,9 +56,6 @@ public class SplashScreenPanel extends JPanel {
     private void loadLabImage() {
         String[] classpathAttempts = {
             "/images/splashscreen.png",
-            "/images/splashscreen.png.png",
-            "/images/splashscreen.jpeg",
-            "/images/splashscreen.jpg"
         };
 
         for (String cp : classpathAttempts) {
@@ -141,7 +122,7 @@ public class SplashScreenPanel extends JPanel {
                 scriptIndex++;
             }
 
-            // Quick advance: waits only ~1 second after last line prints
+            // Advances to the main menu automatically once finished
             if (scriptIndex >= bootScript.length && ticks > 145) {
                 advanceToMenu();
             }
