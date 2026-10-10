@@ -17,10 +17,15 @@ public class RetroDialog extends JDialog {
         setSize(540, 310);
         setBackground(new Color(0, 0, 0, 0));
 
+        // Center precisely over the blackboard monitor region
         if (parent != null) {
             Point loc = parent.getLocationOnScreen();
-            int x = loc.x + (parent.getWidth() - getWidth()) / 2;
-            int y = loc.y + (int) ((parent.getHeight() - getHeight()) * 0.40);
+            // Shift slightly to the right to align with the console blackboard (around 51.2% center)
+            int targetCenterX = (int) (parent.getWidth() * 0.512);
+            int x = loc.x + targetCenterX - (getWidth() / 2);
+
+            // Keep vertical position aligned over the board surface
+            int y = loc.y + (int) ((parent.getHeight() - getHeight()) * 0.38);
             setLocation(x, Math.max(loc.y + 20, y));
         } else {
             setLocationRelativeTo(null);
