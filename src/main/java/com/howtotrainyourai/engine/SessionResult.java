@@ -1,15 +1,34 @@
 package com.howtotrainyourai.engine;
 
-/**
- * Summary of one finished session — trainer name, final token score,
- * highest capability restored, protocol used, and result (win/fail/
- * returned). Written to the training records at endSession() (see
- * CONTEXT.md §2.5).
- *
- * Empty-bodied on purpose, same reason as Protocol: GameEngine.endSession()
- * needs this type to exist to compile this week, but its real fields are
- * Week 4 work (see R1_Engine_Weekly_Plan.md) once records/highest-capability
- * logic is built. Nothing here should be assumed stable until then.
- */
-public class SessionResult {
+/** Immutable summary written to the training records when a session ends. */
+public final class SessionResult {
+    private final String trainerName;
+    private final int finalScore;
+    private final String highestCapability;
+    private final Protocol protocol;
+    private final String result;
+
+    public SessionResult(String trainerName, int finalScore, String highestCapability,
+            Protocol protocol, String result) {
+        this.trainerName = trainerName;
+        this.finalScore = finalScore;
+        this.highestCapability = highestCapability;
+        this.protocol = protocol;
+        this.result = result;
+    }
+
+    public String getTrainerName() { return trainerName; }
+    public int getFinalScore() { return finalScore; }
+    public String getHighestCapability() { return highestCapability; }
+    public Protocol getProtocol() { return protocol; }
+    public String getResult() { return result; }
+
+    String toRecordLine() {
+        return String.join("|", clean(trainerName), Integer.toString(finalScore),
+                clean(highestCapability), protocol.name(), result);
+    }
+
+    private static String clean(String value) {
+        return value.replace('|', '/').replace('\n', ' ').replace('\r', ' ');
+    }
 }

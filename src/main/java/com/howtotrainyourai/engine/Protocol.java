@@ -22,6 +22,8 @@ public enum Protocol {
             List.of(5, 10), false),
     HIGH_RISK(List.of(Lifeline.BINARY_CHOICE, Lifeline.PREDICT), List.of(5), true);
 
+    public static final int HIGH_RISK_TIME_LIMIT_SECONDS = 30;
+
     private final List<Lifeline> allowedLifelines;
     private final List<Integer> checkpointQuestions;
     private final boolean hasTimer;

@@ -2,6 +2,8 @@ package com.howtotrainyourai.engine;
 
 import com.howtotrainyourai.model.Choice;
 import com.howtotrainyourai.model.Question;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -52,6 +54,9 @@ public class GameEngineImpl implements GameEngine {
     private int securedScore; // tokenTotal to roll back to on failure
     private int securedIndex; // questionIndex to roll back to on failure
     private String trainerName;
+    private String highestCapability = "None";
+    private String endReason;
+    private SessionResult sessionResult;
     private final Set<Lifeline> remainingLifelines = EnumSet.noneOf(Lifeline.class);
 
     public GameEngineImpl(QuestionSource questionSource) {
@@ -70,6 +75,9 @@ public class GameEngineImpl implements GameEngine {
         // to call from a GUI button click, not just a terminal loop, so it
         // does nothing but build data and assign fields.
         this.trainerName = trainerName;
+        this.highestCapability = "None";
+        this.endReason = null;
+        this.sessionResult = null;
         this.protocol = protocol;
         this.sessionQuestions = questionSource.buildSession();
         this.questionIndex = 0;
@@ -151,6 +159,9 @@ public class GameEngineImpl implements GameEngine {
 
             capabilityName = CAPABILITY_UNLOCKS.get(questionNumber);
             capabilityUnlocked = capabilityName != null;
+            if (capabilityUnlocked) {
+                highestCapability = capabilityName;
+            }
 
             if (protocol.isCheckpoint(questionNumber)) {
                 securedScore = tokenTotal;
@@ -179,6 +190,7 @@ public class GameEngineImpl implements GameEngine {
         // re-scoring the same question or walking off the end.
         if (isGameOver) {
             isRunning = false;
+            endReason = isCorrect ? "WIN" : "FAIL";
         }
 
         return new TurnResult(isCorrect, tokensAwarded, tokenTotal, capabilityUnlocked, capabilityName, isGameOver);
@@ -186,8 +198,24 @@ public class GameEngineImpl implements GameEngine {
 
     @Override
     public SessionResult endSession() {
+        if (sessionResult != null) {
+            return sessionResult;
+        }
+        if (endReason == null) {
+            endReason = "RETURN";
+        }
         isRunning = false;
-        return new SessionResult();
+        String recordedCapability = protocol == Protocol.HIGH_RISK && "FAIL".equals(endReason)
+                ? "None"
+                : highestCapability;
+        SessionResult result = new SessionResult(trainerName, tokenTotal, recordedCapability, protocol, endReason);
+        try {
+            RecordsStore.append(result);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Could not write training record", e);
+        }
+        sessionResult = result;
+        return sessionResult;
     }
 
     /**
