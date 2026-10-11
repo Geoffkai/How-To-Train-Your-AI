@@ -3,6 +3,7 @@ package com.howtotrainyourai.gui;
 import com.howtotrainyourai.engine.GameEngine;
 import com.howtotrainyourai.engine.Lifeline;
 import com.howtotrainyourai.engine.LifelineResult;
+import com.howtotrainyourai.engine.Protocol;
 import com.howtotrainyourai.engine.TurnResult;
 import com.howtotrainyourai.model.Choice;
 import com.howtotrainyourai.model.Question;
@@ -229,6 +230,10 @@ public class ScenePanel extends JPanel implements GameScreen {
     private final List<Boolean> paperGood = new ArrayList<>();
     private Timer paperFeedTimer;
     private double paperFeedT = 1;
+    private Timer countdownTimer;
+    private int countdownSeconds;
+    private Timer endingTimer;
+    private int endingCapabilityIndex;
 
     private GameEngine engine;
     private int questionIndex;
@@ -310,6 +315,7 @@ public class ScenePanel extends JPanel implements GameScreen {
         nextButton.setEnabled(false);
         nextButton.addActionListener(e -> {
             if (sessionOver) {
+                finishSession();
                 cardPanel.showScreen(CardPanel.MENU);
             } else {
                 showQuestion();
@@ -322,7 +328,12 @@ public class ScenePanel extends JPanel implements GameScreen {
         add(switchButton);
 
         backButton = flatButton("Back", FONT_LABEL, BRASS, PAPER);
-        backButton.addActionListener(e -> cardPanel.showScreen(CardPanel.MENU));
+        backButton.addActionListener(e -> {
+            if (engine != null) {
+                finishSession();
+            }
+            cardPanel.showScreen(CardPanel.MENU);
+        });
         add(backButton);
 
         addComponentListener(new ComponentAdapter() {
@@ -428,6 +439,12 @@ public class ScenePanel extends JPanel implements GameScreen {
         if (idleTimer != null) {
             idleTimer.stop();
         }
+        if (countdownTimer != null) {
+            countdownTimer.stop();
+        }
+        if (endingTimer != null) {
+            endingTimer.stop();
+        }
         monitorState = MonitorState.LISTENING;
         heartRate = 72;
         faceX = (MONITOR_W - 28) / 2.0 - FACE_W / 2.0;
@@ -456,7 +473,46 @@ public class ScenePanel extends JPanel implements GameScreen {
         monitorState = MonitorState.LISTENING;
         waitingForAnswer = true;
         scheduleIdle();
+        startCountdown();
         relayout();
+    }
+
+    private void startCountdown() {
+        if (countdownTimer != null) {
+            countdownTimer.stop();
+        }
+        if (!engine.getProtocol().hasTimer()) {
+            countdownSeconds = 0;
+            return;
+        }
+        countdownSeconds = Protocol.HIGH_RISK_TIME_LIMIT_SECONDS;
+        countdownTimer = new Timer(1000, e -> {
+            countdownSeconds--;
+            repaint();
+            if (countdownSeconds <= 0) {
+                countdownTimer.stop();
+                print("HIGH RISK TIMER EXPIRED", false);
+                List<Choice> choices = displayedQuestion.getChoices();
+                for (int i = 0; i < choices.size(); i++) {
+                    if (!displayedQuestion.isCorrect(choices.get(i).getChoiceId())) {
+                        submitAnswerAt(i);
+                        return;
+                    }
+                }
+            }
+        });
+        countdownTimer.start();
+    }
+
+    private void finishSession() {
+        if (countdownTimer != null) {
+            countdownTimer.stop();
+        }
+        try {
+            engine.endSession();
+        } catch (java.io.UncheckedIOException e) {
+            JOptionPane.showMessageDialog(this, e.getMessage(), "Training record error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     /**
@@ -526,7 +582,7 @@ public class ScenePanel extends JPanel implements GameScreen {
         }
         switchButton.setEnabled(false);
         switchButton.turned = true;
-        engine.endSession();
+        finishSession();
         markerLatched = !markerFailed;
         waitingForAnswer = false;
         if (idleTimer != null) {
@@ -557,6 +613,9 @@ public class ScenePanel extends JPanel implements GameScreen {
         }
 
         int answeredRung = questionIndex;
+        if (countdownTimer != null) {
+            countdownTimer.stop();
+        }
         TurnResult result = engine.submitAnswer(choiceId);
         if (result.isRetry()) {
             // Override absorbed the miss. The engine keeps the same question and
@@ -609,6 +668,12 @@ public class ScenePanel extends JPanel implements GameScreen {
         }
 
         if (sessionOver) {
+            finishSession();
+            if (result.isCorrect()) {
+                startWinSequence();
+            } else {
+                print("RESTORATION FAILED", false);
+            }
             for (JButton lifelineButton : lifelineButtons) {
                 lifelineButton.setEnabled(false);
             }
@@ -619,6 +684,29 @@ public class ScenePanel extends JPanel implements GameScreen {
         }
         nextButton.setEnabled(true);
         relayout();
+    }
+
+    private void startWinSequence() {
+        java.util.Arrays.fill(lampsOn, false);
+        endingCapabilityIndex = 0;
+        String[] online = { "MEMORY ONLINE", "UNDERSTANDING ONLINE", "APPLICATION ONLINE",
+                "ANALYSIS ONLINE", "EVALUATION ONLINE", "SYNTHESIS ONLINE" };
+        if (endingTimer != null) {
+            endingTimer.stop();
+        }
+        endingTimer = new Timer(700, e -> {
+            if (endingCapabilityIndex < lampsOn.length) {
+                lampsOn[endingCapabilityIndex] = true;
+                print(online[endingCapabilityIndex], true);
+                endingCapabilityIndex++;
+            } else {
+                print("AI CORE: FULLY ACTIVATED", true);
+                endingTimer.stop();
+            }
+            repaint();
+        });
+        endingTimer.setInitialDelay(0);
+        endingTimer.start();
     }
 
     private void print(String text, boolean good) {
@@ -1028,6 +1116,11 @@ public class ScenePanel extends JPanel implements GameScreen {
                 (int) BOARD_X + 24, (int) BOARD_Y + 30);
         g2.drawString("PROBE " + String.format("%02d", displayedIndex + 1) + " / " + TOTAL_QUESTIONS,
                 (int) (BOARD_X + BOARD_W) - 180, (int) BOARD_Y + 30);
+        if (engine.getProtocol().hasTimer()) {
+            g2.setColor(countdownSeconds <= 5 ? TAPE_RED : CHALK_YELLOW);
+            g2.drawString("TIME " + countdownSeconds + "s", (int) (BOARD_X + BOARD_W) - 115,
+                    (int) BOARD_Y + 54);
+        }
 
         g2.setFont(FONT_PROMPT);
         drawWrapped(g2, question.getText(), (int) BOARD_X + 24, (int) BOARD_Y + 70, (int) BOARD_W - 48, 26);
