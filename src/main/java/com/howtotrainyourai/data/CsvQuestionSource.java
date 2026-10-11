@@ -14,12 +14,9 @@ import java.util.Random;
  * QuestionBankLoader once, then on every buildSession() call:
  *
  * 1) Groups the bank by Bloom stage, then by module within each stage.
- * 2) For each stage, picks the required number of questions one at a time,
- * choosing UNIFORMLY among whichever modules still have unused
- * questions left for that stage. This means a module with more total
- * questions is never more likely to get picked than a module with
- * fewer -- every module gets an equal chance on every single pick
- * (Assignment Guide #1 item 1d).
+ * 2) For each stage, picks from the least-represented module that still has
+ * questions for that stage, breaking ties randomly. This keeps module counts
+ * balanced across the full session without favoring a larger question pool.
  * 3) Shuffles each selected question's choices in place.
  *
  * Ordering of the returned list follows ascending Bloom stage, per
@@ -63,12 +60,13 @@ public class CsvQuestionSource implements QuestionSource {
         Map<String, Map<String, List<Question>>> byStageThenModule = groupByStageThenModule(bank);
 
         List<Question> session = new ArrayList<>();
+        Map<String, Integer> selectedByModule = new LinkedHashMap<>();
         for (Map.Entry<String, Integer> stageEntry : QUESTIONS_PER_STAGE.entrySet()) {
             String stage = stageEntry.getKey();
             int countNeeded = stageEntry.getValue();
 
             Map<String, List<Question>> byModule = byStageThenModule.getOrDefault(stage, Map.of());
-            session.addAll(pickEquallyAcrossModules(stage, byModule, countNeeded));
+            session.addAll(pickEquallyAcrossModules(stage, byModule, countNeeded, selectedByModule));
         }
 
         shuffleChoicesInPlace(session);
@@ -86,13 +84,12 @@ public class CsvQuestionSource implements QuestionSource {
     }
 
     /**
-     * Picks `countNeeded` questions from a single Bloom stage. On every pick,
-     * every module that still has at least one unused question for this
-     * stage is equally likely to be chosen -- regardless of how many
-     * questions that module has in total for this stage.
+     * Picks from the least-represented available module; randomizes ties and
+     * question choice within each module.
      */
     private List<Question> pickEquallyAcrossModules(
-            String stage, Map<String, List<Question>> byModule, int countNeeded) {
+            String stage, Map<String, List<Question>> byModule, int countNeeded,
+            Map<String, Integer> selectedByModule) {
 
         // Work on shuffled copies so we can pop questions off without
         // touching the shared bank, and so "pick from this module" itself
@@ -107,9 +104,17 @@ public class CsvQuestionSource implements QuestionSource {
         List<Question> picked = new ArrayList<>();
         for (int i = 0; i < countNeeded; i++) {
             List<String> availableModules = new ArrayList<>();
+            int fewestSelected = Integer.MAX_VALUE;
             for (Map.Entry<String, List<Question>> e : remaining.entrySet()) {
                 if (!e.getValue().isEmpty()) {
-                    availableModules.add(e.getKey());
+                    int selected = selectedByModule.getOrDefault(e.getKey(), 0);
+                    if (selected < fewestSelected) {
+                        availableModules.clear();
+                        fewestSelected = selected;
+                    }
+                    if (selected == fewestSelected) {
+                        availableModules.add(e.getKey());
+                    }
                 }
             }
             if (availableModules.isEmpty()) {
@@ -122,6 +127,7 @@ public class CsvQuestionSource implements QuestionSource {
             List<Question> pool = remaining.get(chosenModule);
             Question chosen = pool.remove(pool.size() - 1); // pool is pre-shuffled, so "last" is random
             picked.add(chosen);
+            selectedByModule.merge(chosenModule, 1, Integer::sum);
         }
         return picked;
     }
