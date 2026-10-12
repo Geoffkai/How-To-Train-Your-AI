@@ -709,6 +709,9 @@ public class ScenePanel extends JPanel implements GameScreen {
             animateMarkerTo(answeredRung);
             scheduleMarkerRollback(answeredRung);
             monitorState = MonitorState.ALERT;
+            if (sessionOver && engine.getProtocol() == Protocol.HIGH_RISK) {
+                java.util.Arrays.fill(lampsOn, false);
+            }
         }
 
         if (sessionOver) {
