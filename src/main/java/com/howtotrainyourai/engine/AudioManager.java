@@ -14,6 +14,7 @@ import java.util.Map;
 // wav only, javax.sound.sampled, no external codecs: grader machines might not have mp3 support
 public class AudioManager {
 
+    private static final float SAMPLE_RATE = 22050f;
     private final Map<String, Clip> sfxClips = new HashMap<>();
     private Clip musicClip;
 
@@ -47,6 +48,11 @@ public class AudioManager {
         musicClip = AudioSystem.getClip();
         musicClip.open(stream);
         applyVolume(musicClip, musicVolume);
+    }
+
+    public void loadGeneratedAudio() throws LineUnavailableException, IOException {
+        loadMusic(pcmStream(generateAmbientPcm()));
+        loadSfx("control", pcmStream(generateClickPcm()));
     }
 
     // loops from the top until stopMusic(): used for the main menu / bg track
@@ -84,6 +90,13 @@ public class AudioManager {
 
     public float getSfxVolume() {
         return sfxVolume;
+    }
+
+    public void close() {
+        stopMusic();
+        if (musicClip != null) musicClip.close();
+        for (Clip clip : sfxClips.values()) clip.close();
+        sfxClips.clear();
     }
 
     private static float clamp(float volume) {
@@ -129,17 +142,54 @@ public class AudioManager {
         System.out.println("audiomanager self-check passed");
     }
 
-    // in-memory mono 16-bit pcm sine wave, no bundled asset needed for the self-check
+    static byte[] generateAmbientPcm() {
+        int samplesPerNote = (int) (SAMPLE_RATE * 1.5);
+        double[] notes = { 110.0, 146.83, 164.81, 146.83 };
+        byte[] pcm = new byte[samplesPerNote * notes.length * 2];
+        for (int i = 0; i < samplesPerNote * notes.length; i++) {
+            int note = i / samplesPerNote;
+            int withinNote = i % samplesPerNote;
+            double t = withinNote / SAMPLE_RATE;
+            double envelope = Math.min(1, withinNote / (SAMPLE_RATE * 0.18))
+                    * Math.min(1, (samplesPerNote - withinNote) / (SAMPLE_RATE * 0.18));
+            double sample = (Math.sin(2 * Math.PI * notes[note] * t)
+                    + 0.22 * Math.sin(4 * Math.PI * notes[note] * t)) * envelope * 0.12;
+            putSample(pcm, i, sample);
+        }
+        return pcm;
+    }
+
+    static byte[] generateClickPcm() {
+        int frames = (int) (SAMPLE_RATE * 0.07);
+        byte[] pcm = new byte[frames * 2];
+        for (int i = 0; i < frames; i++) {
+            double envelope = 1 - (double) i / frames;
+            putSample(pcm, i, Math.sin(2 * Math.PI * 740 * i / SAMPLE_RATE) * envelope * 0.3);
+        }
+        return pcm;
+    }
+
+    private static void putSample(byte[] pcm, int frame, double sample) {
+        short value = (short) (sample * Short.MAX_VALUE);
+        pcm[frame * 2] = (byte) value;
+        pcm[frame * 2 + 1] = (byte) (value >> 8);
+    }
+
+    private static AudioInputStream pcmStream(byte[] pcm) {
+        AudioFormat format = new AudioFormat(SAMPLE_RATE, 16, 1, true, false);
+        return new AudioInputStream(new ByteArrayInputStream(pcm), format, pcm.length / 2);
+    }
+
+    // In-memory mono 16-bit PCM tone, used only by this class's self-check.
     private static AudioInputStream generateTone(double frequencyHz, int durationMs) {
-        float sampleRate = 44100f;
-        int frameCount = (int) (sampleRate * durationMs / 1000);
+        int frameCount = (int) (SAMPLE_RATE * durationMs / 1000);
         byte[] pcm = new byte[frameCount * 2];
         for (int i = 0; i < frameCount; i++) {
-            short sample = (short) (Math.sin(2 * Math.PI * frequencyHz * i / sampleRate) * Short.MAX_VALUE * 0.5);
+            short sample = (short) (Math.sin(2 * Math.PI * frequencyHz * i / SAMPLE_RATE) * Short.MAX_VALUE * 0.5);
             pcm[i * 2] = (byte) (sample & 0xff);
             pcm[i * 2 + 1] = (byte) ((sample >> 8) & 0xff);
         }
-        AudioFormat format = new AudioFormat(sampleRate, 16, 1, true, false);
+        AudioFormat format = new AudioFormat(SAMPLE_RATE, 16, 1, true, false);
         return new AudioInputStream(new ByteArrayInputStream(pcm), format, frameCount);
     }
 }
