@@ -721,6 +721,7 @@ public class ScenePanel extends JPanel implements GameScreen {
                 for (int lampIndex = 0; lampIndex < CAPABILITY_NAMES.length; lampIndex++) {
                     if (CAPABILITY_NAMES[lampIndex].equals(capability)) {
                         lampsOn[lampIndex] = true;
+                        if (!(result.isGameOver() && result.isCorrect())) playCeilingLightSound();
                     }
                 }
             }
@@ -762,6 +763,10 @@ public class ScenePanel extends JPanel implements GameScreen {
         if (audioManager != null) audioManager.playSfx("control");
     }
 
+    private void playCeilingLightSound() {
+        if (audioManager != null) audioManager.playSfx("ceiling");
+    }
+
     public void shutdown() {
         for (Timer timer : new Timer[] { paperFeedTimer, countdownTimer, endingTimer, questionSweepTimer,
                 markerAnimTimer, markerRollbackTimer, monitorTimer, heartRateTimer, idleTimer }) {
@@ -780,6 +785,7 @@ public class ScenePanel extends JPanel implements GameScreen {
         endingTimer = new Timer(700, e -> {
             if (endingCapabilityIndex < lampsOn.length) {
                 lampsOn[endingCapabilityIndex] = true;
+                playCeilingLightSound();
                 print(online[endingCapabilityIndex], true);
                 endingCapabilityIndex++;
             } else {

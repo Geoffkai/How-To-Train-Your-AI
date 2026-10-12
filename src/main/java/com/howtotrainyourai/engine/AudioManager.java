@@ -53,6 +53,7 @@ public class AudioManager {
     public void loadGeneratedAudio() throws LineUnavailableException, IOException {
         loadMusic(pcmStream(generateAmbientPcm()));
         loadSfx("control", pcmStream(generateClickPcm()));
+        loadSfx("ceiling", pcmStream(generateCeilingLightPcm()));
     }
 
     // loops from the top until stopMusic(): used for the main menu / bg track
@@ -165,6 +166,23 @@ public class AudioManager {
         for (int i = 0; i < frames; i++) {
             double envelope = 1 - (double) i / frames;
             putSample(pcm, i, Math.sin(2 * Math.PI * 740 * i / SAMPLE_RATE) * envelope * 0.3);
+        }
+        return pcm;
+    }
+
+    static byte[] generateCeilingLightPcm() {
+        int frames = (int) (SAMPLE_RATE * 0.42);
+        byte[] pcm = new byte[frames * 2];
+        int noiseState = 0x6d2b79f5;
+        for (int i = 0; i < frames; i++) {
+            noiseState = noiseState * 1664525 + 1013904223;
+            double noise = (noiseState >>> 1) / (double) 0x40000000 - 1;
+            double t = i / SAMPLE_RATE;
+            double impact = noise * Math.exp(-t * 90) * 0.4
+                    + Math.sin(2 * Math.PI * 76 * t) * Math.exp(-t * 13) * 0.65
+                    + (Math.sin(2 * Math.PI * 310 * t) + 0.35 * Math.sin(2 * Math.PI * 630 * t))
+                            * Math.exp(-t * 30) * 0.22;
+            putSample(pcm, i, impact * 0.68);
         }
         return pcm;
     }
