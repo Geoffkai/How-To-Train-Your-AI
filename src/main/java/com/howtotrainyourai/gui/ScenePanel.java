@@ -12,6 +12,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.GeneralPath;
@@ -28,7 +29,7 @@ import java.util.function.Consumer;
 // as PlayPanel: ScenePanel(CardPanel), startGame(GameEngine). PlayPanel stays the
 // working fallback until this is swapped in at Main.java after the oct 4 playthrough.
 //
-// flat shapes only, no gradients/textures. arm sweep is a later phase, not here.
+// flat shapes only, no gradients/textures.
 public class ScenePanel extends JPanel implements GameScreen {
 
     private static final int TOTAL_QUESTIONS = 15;
@@ -106,6 +107,7 @@ public class ScenePanel extends JPanel implements GameScreen {
     private static final double LEDGE_X = 195, LEDGE_Y = 673, LEDGE_W = 1162, LEDGE_H = 24;
     private static final int LINE_HEIGHT = 14;
     private static final int PAPER_FEED_MS = 180;
+    private static final int QUESTION_SWEEP_MS = 1500;
     private static final double MONITOR_X = 1288, MONITOR_Y = 610, MONITOR_W = 272, MONITOR_H = 270;
     private static final double BACK_X = 20, BACK_Y = 20, BACK_W = 80, BACK_H = 30;
 
@@ -233,6 +235,9 @@ public class ScenePanel extends JPanel implements GameScreen {
     private Timer countdownTimer;
     private int countdownSeconds;
     private Timer endingTimer;
+    private Timer questionSweepTimer;
+    private long questionSweepStart;
+    private double questionSweepProgress = 1;
     private int endingCapabilityIndex;
 
     private GameEngine engine;
@@ -299,6 +304,9 @@ public class ScenePanel extends JPanel implements GameScreen {
                 button.addActionListener(e -> pullLifeline(lifeline));
             }
             lifelineButtons[i] = button;
+            button.addMouseListener(new MouseAdapter() {
+                @Override public void mousePressed(MouseEvent e) { skipQuestionSweep(); }
+            });
             add(button);
         }
 
@@ -307,12 +315,18 @@ public class ScenePanel extends JPanel implements GameScreen {
             TaperedButton button = new TaperedButton(keyLabels[i], FONT_PROMPT, BRASS_LIT, WOOD_DARK);
             final int position = i;
             button.addActionListener(e -> submitAnswerAt(position));
+            button.addMouseListener(new MouseAdapter() {
+                @Override public void mousePressed(MouseEvent e) { skipQuestionSweep(); }
+            });
             keyButtons[i] = button;
             add(button);
         }
 
         nextButton = new TaperedButton("NEXT PROBE", FONT_LABEL, BRASS, PAPER);
         nextButton.setEnabled(false);
+        nextButton.addMouseListener(new MouseAdapter() {
+            @Override public void mousePressed(MouseEvent e) { skipQuestionSweep(); }
+        });
         nextButton.addActionListener(e -> {
             if (sessionOver) {
                 finishSession();
@@ -324,10 +338,16 @@ public class ScenePanel extends JPanel implements GameScreen {
         add(nextButton);
 
         switchButton = new SwitchButton();
+        switchButton.addMouseListener(new MouseAdapter() {
+            @Override public void mousePressed(MouseEvent e) { skipQuestionSweep(); }
+        });
         switchButton.addActionListener(e -> pullSwitch());
         add(switchButton);
 
         backButton = flatButton("Back", FONT_LABEL, BRASS, PAPER);
+        backButton.addMouseListener(new MouseAdapter() {
+            @Override public void mousePressed(MouseEvent e) { skipQuestionSweep(); }
+        });
         backButton.addActionListener(e -> {
             if (engine != null) {
                 finishSession();
@@ -346,8 +366,15 @@ public class ScenePanel extends JPanel implements GameScreen {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
+                skipQuestionSweep();
                 wakeMonitor();
             }
+        });
+
+        KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(e -> {
+            if (e.getID() == KeyEvent.KEY_PRESSED && isShowing() && !e.isControlDown()
+                    && !e.isMetaDown() && !e.isAltDown()) skipQuestionSweep();
+            return false;
         });
 
         monitorTimer = new Timer(MONITOR_TICK_MS, e -> tickMonitor());
@@ -455,6 +482,8 @@ public class ScenePanel extends JPanel implements GameScreen {
     }
 
     private void showQuestion() {
+        if (questionSweepTimer != null) questionSweepTimer.stop();
+        questionSweepProgress = 0;
         displayedQuestion = engine.currentQuestion();
         displayedIndex = questionIndex;
         removedChoiceIds.clear();
@@ -474,7 +503,22 @@ public class ScenePanel extends JPanel implements GameScreen {
         waitingForAnswer = true;
         scheduleIdle();
         startCountdown();
+        questionSweepStart = System.currentTimeMillis();
+        questionSweepTimer = new Timer(16, e -> {
+            questionSweepProgress = Math.min(1, (System.currentTimeMillis() - questionSweepStart)
+                    / (double) QUESTION_SWEEP_MS);
+            repaint();
+            if (questionSweepProgress >= 1) questionSweepTimer.stop();
+        });
+        questionSweepTimer.start();
         relayout();
+    }
+
+    private void skipQuestionSweep() {
+        if (questionSweepProgress >= 1) return;
+        questionSweepProgress = 1;
+        if (questionSweepTimer != null) questionSweepTimer.stop();
+        repaint();
     }
 
     private void startCountdown() {
@@ -760,7 +804,12 @@ public class ScenePanel extends JPanel implements GameScreen {
 
         g2.setColor(SLATE);
         g2.fillRect((int) BOARD_X, (int) BOARD_Y, (int) BOARD_W, (int) BOARD_H);
-        paintBoardContent(g2);
+        Graphics2D boardGraphics = (Graphics2D) g2.create();
+        boardGraphics.clipRect((int) BOARD_X, (int) BOARD_Y,
+                (int) (BOARD_W * questionSweepProgress), (int) BOARD_H);
+        paintBoardContent(boardGraphics);
+        boardGraphics.dispose();
+        if (questionSweepProgress < 1) paintQuestionArm(g2);
 
         g2.setColor(WOOD_DARK);
         g2.fillRect((int) LEDGE_X, (int) LEDGE_Y, (int) LEDGE_W, (int) LEDGE_H);
@@ -820,6 +869,23 @@ public class ScenePanel extends JPanel implements GameScreen {
         });
 
         g2.dispose();
+    }
+
+    private void paintQuestionArm(Graphics2D g2) {
+        double x = BOARD_X + BOARD_W * questionSweepProgress;
+        double mountX = LAMPS_X + (LAMPS_W - 1) * questionSweepProgress;
+        g2.setColor(STEEL_DARK);
+        g2.fillRect((int) LAMPS_X, 34, (int) LAMPS_W, 9);
+        g2.setColor(STEEL_DARK);
+        g2.fillRect((int) mountX - 4, 32, 8, 36);
+        g2.setColor(STEEL);
+        g2.setStroke(new BasicStroke(12, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g2.drawLine((int) mountX, 66, (int) (mountX - 24), 142);
+        g2.drawLine((int) (mountX - 24), 142, (int) (x - 12), (int) BOARD_Y);
+        g2.setColor(BRASS_LIT);
+        g2.fillOval((int) mountX - 7, 59, 14, 14);
+        g2.fillOval((int) (mountX - 31), 135, 14, 14);
+        g2.fillOval((int) (x - 18), (int) BOARD_Y - 6, 12, 12);
     }
 
     // low-detail props, both direct children of the scene (not desk-nested); the
