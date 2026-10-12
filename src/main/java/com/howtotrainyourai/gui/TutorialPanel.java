@@ -160,6 +160,11 @@ public class TutorialPanel extends JPanel {
         }
     }
 
+    public void shutdown() {
+        fxTimer.stop();
+        stopStoryAudio();
+    }
+
     private void finishTransmission() {
         stopStoryAudio();
         isVoiceoverActive = false;

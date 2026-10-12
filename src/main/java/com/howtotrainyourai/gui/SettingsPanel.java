@@ -1,5 +1,7 @@
 package com.howtotrainyourai.gui;
 
+import com.howtotrainyourai.engine.AudioManager;
+import com.howtotrainyourai.engine.QuestionSpeechService;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
@@ -22,6 +24,8 @@ public class SettingsPanel extends JPanel {
     private static final Font LOG_FONT = new Font(Font.MONOSPACED, Font.BOLD, 13);
 
     private final CardPanel cardPanel;
+    private final AudioManager audioManager;
+    private final QuestionSpeechService speechService;
     private BufferedImage backgroundImage;
     private final Random random = new Random();
 
@@ -33,21 +37,30 @@ public class SettingsPanel extends JPanel {
     // Controls
     private JSlider musicSlider;
     private JSlider sfxSlider;
+    private JSlider speechSlider;
+    private JCheckBox speakQuestions;
+    private JLabel musicValue;
+    private JLabel sfxValue;
+    private JLabel speechValue;
+    private JLabel musicLabel;
+    private JLabel sfxLabel;
+    private JLabel speechLabel;
     private JButton viewRecordsBtn;
     private JButton backBtn;
-
-    // Persisted volume values
-    private static int musicVolume = 74;
-    private static int sfxVolume = 58;
 
     // Highest record data
     private static final int HIGHEST_SCORE = 1000;
     private static final String TOP_OPERATOR = "MARK ASHER";
     private static final String TOP_PROTOCOL = "HIGH RISK (2x)";
     private static final String TOP_TIER = "SYNTHESIS [ONLINE]";
-
     public SettingsPanel(CardPanel cardPanel) {
+        this(cardPanel, null, null);
+    }
+
+    public SettingsPanel(CardPanel cardPanel, AudioManager audioManager, QuestionSpeechService speechService) {
         this.cardPanel = cardPanel;
+        this.audioManager = audioManager;
+        this.speechService = speechService;
         setLayout(null);
         setBackground(new Color(0x10, 0x0E, 0x0C));
 
@@ -83,37 +96,54 @@ public class SettingsPanel extends JPanel {
         // ==========================================
         // 1. AUDIO CALIBRATION
         // ==========================================
-        JLabel musicLbl = createLabel("MUSIC VOLUME:");
-        musicLbl.setBounds(90, 160, 160, 25);
-        add(musicLbl);
-
-        musicSlider = createSlider(0, 100, musicVolume);
-        musicSlider.setBounds(260, 160, 230, 25);
+        musicLabel = createLabel("MUSIC VOLUME:");
+        musicSlider = createSlider(0, 100,
+                audioManager == null ? 70 : Math.round(audioManager.getMusicVolume() * 100));
         add(musicSlider);
-
-        JLabel musicVal = createValueLabel(musicVolume + "%");
-        musicVal.setBounds(505, 160, 60, 25);
+        add(musicLabel);
+        musicValue = createValueLabel(musicSlider.getValue() + "%");
         musicSlider.addChangeListener(e -> {
-            musicVolume = musicSlider.getValue();
-            musicVal.setText(musicVolume + "%");
+            int value = musicSlider.getValue();
+            musicValue.setText(value + "%");
+            if (audioManager != null) audioManager.setMusicVolume(value / 100f);
         });
-        add(musicVal);
+        add(musicValue);
 
-        JLabel sfxLbl = createLabel("SFX RELAY:");
-        sfxLbl.setBounds(90, 210, 160, 25);
-        add(sfxLbl);
-
-        sfxSlider = createSlider(0, 100, sfxVolume);
-        sfxSlider.setBounds(260, 210, 230, 25);
+        sfxLabel = createLabel("SFX RELAY:");
+        sfxSlider = createSlider(0, 100,
+                audioManager == null ? 70 : Math.round(audioManager.getSfxVolume() * 100));
         add(sfxSlider);
-
-        JLabel sfxVal = createValueLabel(sfxVolume + "%");
-        sfxVal.setBounds(505, 210, 60, 25);
+        add(sfxLabel);
+        sfxValue = createValueLabel(sfxSlider.getValue() + "%");
         sfxSlider.addChangeListener(e -> {
-            sfxVolume = sfxSlider.getValue();
-            sfxVal.setText(sfxVolume + "%");
+            int value = sfxSlider.getValue();
+            sfxValue.setText(value + "%");
+            if (audioManager != null) audioManager.setSfxVolume(value / 100f);
         });
-        add(sfxVal);
+        add(sfxValue);
+
+        speechLabel = createLabel("SPEECH VOLUME:");
+        speechSlider = createSlider(0, 100,
+                speechService == null ? 100 : Math.round(speechService.getVolume() * 100));
+        add(speechSlider);
+        add(speechLabel);
+        speechValue = createValueLabel(speechSlider.getValue() + "%");
+        speechSlider.addChangeListener(e -> {
+            int value = speechSlider.getValue();
+            speechValue.setText(value + "%");
+            if (speechService != null) speechService.setVolume(value / 100f);
+        });
+        add(speechValue);
+
+        speakQuestions = new JCheckBox("SPEAK QUESTIONS", speechService == null || speechService.isEnabled());
+        speakQuestions.setFont(MONO_FONT);
+        speakQuestions.setForeground(CHALK_AMBER);
+        speakQuestions.setOpaque(false);
+        speakQuestions.setFocusPainted(false);
+        speakQuestions.addActionListener(e -> {
+            if (speechService != null) speechService.setEnabled(speakQuestions.isSelected());
+        });
+        add(speakQuestions);
 
         // ==========================================
         // 2. DATA MANAGEMENT & ARCHIVE
@@ -193,6 +223,37 @@ public class SettingsPanel extends JPanel {
             }
         });
         return btn;
+    }
+
+    @Override
+    public void doLayout() {
+        super.doLayout();
+        int w = getWidth();
+        int h = getHeight();
+        if (w == 0 || h == 0) return;
+
+        int labelX = 90;
+        int labelWidth = 160;
+        int sliderX = 260;
+        int sliderWidth = Math.min(230, Math.max(150, w - 610));
+        int valueX = sliderX + sliderWidth + 15;
+        int rowHeight = 26;
+        int[] rowY = { 150, 182, 214 };
+        JLabel[] labels = { musicLabel, sfxLabel, speechLabel };
+        JSlider[] sliders = { musicSlider, sfxSlider, speechSlider };
+        JLabel[] values = { musicValue, sfxValue, speechValue };
+        for (int i = 0; i < sliders.length; i++) {
+            labels[i].setBounds(labelX, rowY[i], labelWidth, rowHeight);
+            sliders[i].setBounds(sliderX, rowY[i], sliderWidth, rowHeight);
+            values[i].setBounds(valueX, rowY[i], 60, rowHeight);
+        }
+        speakQuestions.setBounds(labelX, 250, labelWidth + sliderWidth, rowHeight);
+        viewRecordsBtn.setBounds(90, 315, 340, 30);
+        backBtn.setBounds(70, h - 80, 260, 35);
+    }
+
+    public void shutdown() {
+        fxTimer.stop();
     }
 
     @Override

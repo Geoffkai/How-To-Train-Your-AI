@@ -1,9 +1,11 @@
 package com.howtotrainyourai.gui;
 
+import com.howtotrainyourai.engine.AudioManager;
 import com.howtotrainyourai.engine.GameEngine;
 import com.howtotrainyourai.engine.Lifeline;
 import com.howtotrainyourai.engine.LifelineResult;
 import com.howtotrainyourai.engine.Protocol;
+import com.howtotrainyourai.engine.QuestionSpeechService;
 import com.howtotrainyourai.engine.TurnResult;
 import com.howtotrainyourai.model.Choice;
 import com.howtotrainyourai.model.Question;
@@ -222,6 +224,8 @@ public class ScenePanel extends JPanel implements GameScreen {
     }
 
     private final CardPanel cardPanel;
+    private final AudioManager audioManager;
+    private final QuestionSpeechService speechService;
     private final Color[] ladderOutcomes = new Color[TOTAL_QUESTIONS]; // null = not answered yet
     private final TaperedButton[] lifelineButtons = new TaperedButton[3];
     private final TaperedButton[] keyButtons = new TaperedButton[4];
@@ -288,7 +292,13 @@ public class ScenePanel extends JPanel implements GameScreen {
     private double offsetX, offsetY;
 
     public ScenePanel(CardPanel cardPanel) {
+        this(cardPanel, null, null);
+    }
+
+    public ScenePanel(CardPanel cardPanel, AudioManager audioManager, QuestionSpeechService speechService) {
         this.cardPanel = cardPanel;
+        this.audioManager = audioManager;
+        this.speechService = speechService;
         setLayout(null);
         setBackground(WOOD_DARK);
 
@@ -301,7 +311,10 @@ public class ScenePanel extends JPanel implements GameScreen {
                 // same treatment as PlayPanel's "OV" button
                 button.setEnabled(false);
             } else {
-                button.addActionListener(e -> pullLifeline(lifeline));
+                button.addActionListener(e -> {
+                    playControlSound();
+                    pullLifeline(lifeline);
+                });
             }
             lifelineButtons[i] = button;
             button.addMouseListener(new MouseAdapter() {
@@ -314,7 +327,10 @@ public class ScenePanel extends JPanel implements GameScreen {
         for (int i = 0; i < keyButtons.length; i++) {
             TaperedButton button = new TaperedButton(keyLabels[i], FONT_PROMPT, BRASS_LIT, WOOD_DARK);
             final int position = i;
-            button.addActionListener(e -> submitAnswerAt(position));
+            button.addActionListener(e -> {
+                playControlSound();
+                submitAnswerAt(position);
+            });
             button.addMouseListener(new MouseAdapter() {
                 @Override public void mousePressed(MouseEvent e) { skipQuestionSweep(); }
             });
@@ -328,6 +344,7 @@ public class ScenePanel extends JPanel implements GameScreen {
             @Override public void mousePressed(MouseEvent e) { skipQuestionSweep(); }
         });
         nextButton.addActionListener(e -> {
+            playControlSound();
             if (sessionOver) {
                 finishSession();
                 cardPanel.showScreen(CardPanel.MENU);
@@ -341,7 +358,10 @@ public class ScenePanel extends JPanel implements GameScreen {
         switchButton.addMouseListener(new MouseAdapter() {
             @Override public void mousePressed(MouseEvent e) { skipQuestionSweep(); }
         });
-        switchButton.addActionListener(e -> pullSwitch());
+        switchButton.addActionListener(e -> {
+            playControlSound();
+            pullSwitch();
+        });
         add(switchButton);
 
         backButton = flatButton("Back", FONT_LABEL, BRASS, PAPER);
@@ -349,6 +369,7 @@ public class ScenePanel extends JPanel implements GameScreen {
             @Override public void mousePressed(MouseEvent e) { skipQuestionSweep(); }
         });
         backButton.addActionListener(e -> {
+            playControlSound();
             if (engine != null) {
                 finishSession();
             }
@@ -441,6 +462,7 @@ public class ScenePanel extends JPanel implements GameScreen {
     // starts rendering a session that's already been started on engine
     @Override
     public void startGame(GameEngine engine) {
+        if (speechService != null) speechService.cancel();
         this.engine = engine;
         this.questionIndex = 0;
         this.sessionOver = false;
@@ -485,6 +507,7 @@ public class ScenePanel extends JPanel implements GameScreen {
         if (questionSweepTimer != null) questionSweepTimer.stop();
         questionSweepProgress = 0;
         displayedQuestion = engine.currentQuestion();
+        if (speechService != null) speechService.speak(displayedQuestion.getText());
         displayedIndex = questionIndex;
         removedChoiceIds.clear();
         predictedChoiceId = null;
@@ -549,6 +572,7 @@ public class ScenePanel extends JPanel implements GameScreen {
     }
 
     private void finishSession() {
+        if (speechService != null) speechService.cancel();
         if (countdownTimer != null) {
             countdownTimer.stop();
         }
@@ -645,6 +669,7 @@ public class ScenePanel extends JPanel implements GameScreen {
     // (CsvQuestionSource/CONTEXT.md 3), so the display position is not the choiceId;
     // same pattern PlayPanel.submitAnswerAt() already uses for the same reason.
     private void submitAnswerAt(int position) {
+        if (speechService != null) speechService.cancel();
         String choiceId = displayedQuestion.getChoices().get(position).getChoiceId();
         for (JButton keyButton : keyButtons) {
             keyButton.setEnabled(false);
@@ -731,6 +756,17 @@ public class ScenePanel extends JPanel implements GameScreen {
         }
         nextButton.setEnabled(true);
         relayout();
+    }
+
+    private void playControlSound() {
+        if (audioManager != null) audioManager.playSfx("control");
+    }
+
+    public void shutdown() {
+        for (Timer timer : new Timer[] { paperFeedTimer, countdownTimer, endingTimer, questionSweepTimer,
+                markerAnimTimer, markerRollbackTimer, monitorTimer, heartRateTimer, idleTimer }) {
+            if (timer != null) timer.stop();
+        }
     }
 
     private void startWinSequence() {

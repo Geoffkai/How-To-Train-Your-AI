@@ -138,9 +138,10 @@ Non-negotiable, independent of the game design above:
 - [ ] Prize-ladder scoring (satisfied by §2.3 above)
 - [ ] Mouse-only controls
 - [ ] Instructions/how-to-play screen included
-- [ ] Sounds + background music (`.wav` only via `javax.sound.sampled` — no
-  `.mp3`, no external audio libs, per the team plan's risk table — grader
-  machines may lack MP3 codecs)
+- [ ] Sounds + background music; generated music/effects use Java Sound PCM and
+  question speech uses the team's approved, locally bundled FreeTTS `kevin16`
+  voice. No runtime download; package the required jars and license. Do not
+  depend on MP3 codecs or bundled WAV assets.
 - [ ] GUI themed around AI
 - [ ] Splash screen with a **new title** (i.e., not literally "Who Wants to Be
   a Millionaire?" — "How to Train Your AI" satisfies this)

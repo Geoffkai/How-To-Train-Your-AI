@@ -31,6 +31,7 @@ public final class QuestionSpeechService implements AutoCloseable {
                 currentVoice.setVolume(volume);
                 if (closed || !enabled || current != request.get()) return;
                 currentVoice.speak(text);
+                if (current != request.get()) currentVoice.getAudioPlayer().cancel();
             } catch (RuntimeException | LinkageError e) {
                 enabled = false;
                 System.err.println("question speech unavailable: " + e.getMessage());
@@ -65,11 +66,12 @@ public final class QuestionSpeechService implements AutoCloseable {
         if (voice == null) {
             synchronized (this) {
                 if (voice == null) {
-                    voice = Arrays.stream(new KevinVoiceDirectory().getVoices())
+                    Voice loaded = Arrays.stream(new KevinVoiceDirectory().getVoices())
                             .filter(candidate -> "kevin16".equals(candidate.getName()))
                             .findFirst()
                             .orElseThrow(() -> new IllegalStateException("kevin16 voice not found"));
-                    voice.allocate();
+                    loaded.allocate();
+                    voice = loaded;
                 }
             }
         }
@@ -81,7 +83,13 @@ public final class QuestionSpeechService implements AutoCloseable {
         closed = true;
         cancel();
         worker.execute(() -> {
-            if (voice != null) voice.deallocate();
+            if (voice != null) {
+                try {
+                    voice.deallocate();
+                } catch (RuntimeException e) {
+                    System.err.println("question speech shutdown failed: " + e.getMessage());
+                }
+            }
         });
         worker.shutdown();
     }
