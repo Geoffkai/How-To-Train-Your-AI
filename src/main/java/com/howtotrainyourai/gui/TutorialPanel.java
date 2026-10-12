@@ -1,104 +1,417 @@
 package com.howtotrainyourai.gui;
 
 import javax.imageio.ImageIO;
+import javax.sound.sampled.Clip;
 import javax.swing.*;
+import javax.swing.event.AncestorEvent;
+import javax.swing.event.AncestorListener;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.InputStream;
+import java.util.Random;
 
 public class TutorialPanel extends JPanel {
 
-    private BufferedImage backgroundImage;
+    // Grim 1970s Analog Laboratory Palette
+    private static final Color CHALK_AMBER = new Color(0xF4, 0xEF, 0xDD);
+    private static final Color TERMINAL_GREEN = new Color(0x65, 0xDE, 0x92);
+    private static final Color WARNING_RED = new Color(0xDF, 0x4D, 0x42);
+    private static final Color GOLD_ACCENT = new Color(0xD8, 0xB6, 0x68);
+    private static final Color MUTED_GRAY = new Color(0x8C, 0x88, 0x7B);
+    private static final Color SOLID_PLATE = new Color(0x0A, 0x09, 0x08, 250);
+
     private final CardPanel cardPanel;
-    private final JButton backButton;
+    private BufferedImage backgroundImage;
+    private Clip storyClip;
+    private final Random random = new Random();
+
+    // Two Distinct States
+    private boolean isVoiceoverActive = true;
+    private int currentManualPage = 0;
+
+    // Visual FX Timers
+    private final Timer fxTimer;
+    private int glitchTicker = 0;
+
+    // Responsive Buttons
+    private JButton skipTransmissionBtn;
+    private JButton prevBtn;
+    private JButton nextBtn;
+    private JButton backBtn;
+
+    // Phase 2: Operator Manual Pages
+    private final String[][][] manualPages = {
+        // Page 1: Disaster Background & Role
+        {
+            {"[ SECTION 01 // CATASTROPHE BRIEFING ]", "TITLE"},
+            {"", "SPACE"},
+            {"DATE: OCTOBER 1974 // UP TACLOBAN ANALOG COMPUTATION LAB", "GOLD"},
+            {"A catastrophic core-voltage surge compromised the analog mainframe.", "BODY"},
+            {"The AI unit survived, but its 6 cognitive capabilities were knocked OFFLINE.", "BODY"},
+            {"", "SPACE"},
+            {"YOUR ROLE AS LEAD OPERATOR:", "GREEN"},
+            {"You must train the machine by feeding calibrated questions into the desk console.", "BODY"},
+            {"Similar to Who Wants to Be a Millionaire, correctly verifying logic restores", "BODY"},
+            {"the AI's internal weights and ascends the Bloom's Taxonomy cognitive ladder.", "BODY"},
+            {"", "SPACE"},
+            {"Complete all 15 calibration queries to trigger the core awakening sequence.", "ALERT"}
+        },
+        // Page 2: Bloom's Taxonomy Ladder
+        {
+            {"[ SECTION 02 // 15-STAGE TAXONOMY LADDER ]", "TITLE"},
+            {"", "SPACE"},
+            {"Reconstruction follows increasing levels of cognitive complexity:", "BODY"},
+            {"  [Q01 - Q03] REMEMBER   -> Restores Core Memory Banks (10 to 25 Tokens)", "GREEN"},
+            {"  [Q04 - Q05] UNDERSTAND -> Re-establishes Conceptual Understanding", "GREEN"},
+            {"  [Q06 - Q08] APPLY      -> Connects Practical AI Algorithms", "GREEN"},
+            {"  [Q09 - Q10] ANALYZE    -> Deconstructs Problem Architectures", "GREEN"},
+            {"  [Q11 - Q13] EVALUATE   -> Calibrates Heuristic Critical Judgments", "GREEN"},
+            {"  [Q14 - Q15] SYNTHESIS  -> FULL SYSTEM AWAKENING & TRUTH REVEAL", "ALERT"},
+            {"", "SPACE"},
+            {"Stage 15 unlocks the AI's suppressed memory of what caused the 1974 catastrophe.", "GOLD"}
+        },
+        // Page 3: Protocols & Lifelines
+        {
+            {"[ SECTION 03 // PROTOCOLS & ANALOG LIFELINES ]", "TITLE"},
+            {"", "SPACE"},
+            {"CHOOSE YOUR SUPERVISION PROTOCOL:", "GOLD"},
+            {"  STANDARD  : 3 Lifelines | Checkpoints at Q5 & Q10 | Secured token score", "BODY"},
+            {"  HIGH RISK : 2 Lifelines | Timer active | 2x Token multiplier | Secret Ending", "ALERT"},
+            {"", "SPACE"},
+            {"SINGLE-USE ANALOG RELAY LIFELINES:", "GREEN"},
+            {"  * BINARY CHOICE : Shunts noisy relays; eliminates 2 wrong answers.", "BODY"},
+            {"  * PREDICT       : Queries an early heuristic guess (CAN HALLUCINATE!).", "BODY"},
+            {"  * OVERRIDE      : Safety breaker (Standard only) that pardons 1 wrong pick.", "BODY"},
+            {"", "SPACE"},
+            {"RETURN BUTTON: Click Return anytime during a run to bank your tokens safely.", "GOLD"}
+        }
+    };
 
     public TutorialPanel(CardPanel cardPanel) {
         this.cardPanel = cardPanel;
         setLayout(null);
+        setBackground(new Color(0x0E, 0x0C, 0x0B));
 
-        loadTutorialImage();
+        loadLabImage();
+        buildUI();
 
-        backButton = createBackButton();
-        backButton.addActionListener(e -> cardPanel.showScreen(CardPanel.MENU));
-        add(backButton);
+        // Listen for when this panel is shown or hidden
+        addAncestorListener(new AncestorListener() {
+            @Override
+            public void ancestorAdded(AncestorEvent event) {
+                isVoiceoverActive = true;
+                currentManualPage = 0;
+                relayoutButtons();
+                playStoryAudio();
+            }
+
+            @Override
+            public void ancestorRemoved(AncestorEvent event) {
+                stopStoryAudio();
+            }
+
+            @Override
+            public void ancestorMoved(AncestorEvent event) {}
+        });
+
+        // Animation loop for static/glitch & tracking audio end
+        fxTimer = new Timer(60, e -> {
+            glitchTicker++;
+            if (isVoiceoverActive && storyClip != null && !storyClip.isRunning() && storyClip.getMicrosecondPosition() > 0) {
+                finishTransmission();
+            }
+            repaint();
+        });
+        fxTimer.start();
     }
 
-    private void loadTutorialImage() {
-        String[] classpathAttempts = {
-            "/images/tutorialscreen.png",
-            "/tutorialscreen.png"
-        };
-
-        for (String cp : classpathAttempts) {
-            try (InputStream in = getClass().getResourceAsStream(cp)) {
+    private void loadLabImage() {
+        String[] paths = { "/images/splashscreen.png", "/images/splashscreen.jpg" };
+        for (String p : paths) {
+            try (InputStream in = getClass().getResourceAsStream(p)) {
                 if (in != null) {
                     backgroundImage = ImageIO.read(in);
                     if (backgroundImage != null) return;
                 }
             } catch (Exception ignored) {}
         }
+    }
 
-        String[] folderPaths = {
-            "bin/images",
-            "src/main/resources/images",
-            "C:\\Users\\ASUS\\OneDrive\\Desktop\\How-To-Train-Your-AI\\bin\\images",
-            "C:\\Users\\ASUS\\OneDrive\\Desktop\\How-To-Train-Your-AI\\src\\main\\resources\\images"
-        };
-
-        for (String folder : folderPaths) {
-            File dir = new File(folder);
-            if (dir.exists() && dir.isDirectory()) {
-                File[] files = dir.listFiles();
-                if (files != null) {
-                    for (File f : files) {
-                        if (f.getName().equalsIgnoreCase("tutorialscreen.png")) {
-                            try {
-                                backgroundImage = ImageIO.read(f);
-                                if (backgroundImage != null) return;
-                            } catch (Exception ignored) {}
-                        }
-                    }
+    private void playStoryAudio() {
+        new Thread(() -> {
+            try {
+                stopStoryAudio();
+                storyClip = SoundManager.loadClip("/audio/story.wav");
+                if (storyClip != null) {
+                    storyClip.start();
+                } else {
+                    finishTransmission();
                 }
+            } catch (Exception e) {
+                finishTransmission();
             }
+        }).start();
+    }
+
+    private void stopStoryAudio() {
+        if (storyClip != null && storyClip.isOpen()) {
+            storyClip.stop();
+            storyClip.close();
         }
     }
 
-    private JButton createBackButton() {
-        JButton btn = new JButton("BACK");
-        btn.setFont(new Font(Font.MONOSPACED, Font.BOLD, 14));
-        btn.setForeground(new Color(0xED, 0xE3, 0xCD)); // Paper
-        btn.setBackground(new Color(0xA9, 0x86, 0x3F)); // Brass
-        btn.setFocusPainted(false);
-        btn.setBorder(BorderFactory.createLineBorder(new Color(0x7C, 0x60, 0x27), 2));
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        return btn;
+    private void finishTransmission() {
+        stopStoryAudio();
+        isVoiceoverActive = false;
+        SwingUtilities.invokeLater(() -> {
+            relayoutButtons();
+            repaint();
+        });
+    }
+
+    private void buildUI() {
+        // Skip Voiceover Button (Generous width to prevent truncation)
+        skipTransmissionBtn = createRetroButton("[ >> SKIP TRANSMISSION & ENTER MANUAL << ]", WARNING_RED);
+        skipTransmissionBtn.addActionListener(e -> {
+            SoundManager.playSound("/audio/flicker.wav", 120);
+            finishTransmission();
+        });
+        add(skipTransmissionBtn);
+
+        // Previous Page Button
+        prevBtn = createRetroButton("< [ PREV PAGE ]", MUTED_GRAY);
+        prevBtn.addActionListener(e -> {
+            if (currentManualPage > 0) {
+                currentManualPage--;
+                SoundManager.playSound("/audio/flicker.wav", 80);
+                relayoutButtons();
+                repaint();
+            }
+        });
+        add(prevBtn);
+
+        // Next Page Button
+        nextBtn = createRetroButton("[ NEXT PAGE ] >", GOLD_ACCENT);
+        nextBtn.addActionListener(e -> {
+            if (currentManualPage < manualPages.length - 1) {
+                currentManualPage++;
+                SoundManager.playSound("/audio/flicker.wav", 80);
+                relayoutButtons();
+                repaint();
+            }
+        });
+        add(nextBtn);
+
+        // Back to Menu Button
+        backBtn = createRetroButton("<< [ RETURN TO CONSOLE ]", CHALK_AMBER);
+        backBtn.addActionListener(e -> {
+            stopStoryAudio();
+            SoundManager.playSound("/audio/flicker.wav", 100);
+            cardPanel.showScreen(CardPanel.MENU);
+        });
+        add(backBtn);
+    }
+
+    private void relayoutButtons() {
+        int w = getWidth() > 0 ? getWidth() : 960;
+        int h = getHeight() > 0 ? getHeight() : 600;
+
+        int frameX = 50;
+        int frameW = w - 100;
+        int frameH = h - 90;
+        int btnY = frameH - 10;
+
+        if (isVoiceoverActive) {
+            skipTransmissionBtn.setVisible(true);
+            prevBtn.setVisible(false);
+            nextBtn.setVisible(false);
+            backBtn.setVisible(true);
+
+            backBtn.setBounds(frameX + 30, btnY, 260, 36);
+            skipTransmissionBtn.setBounds(frameX + frameW - 440, btnY, 410, 36);
+        } else {
+            skipTransmissionBtn.setVisible(false);
+            backBtn.setVisible(true);
+            prevBtn.setVisible(currentManualPage > 0);
+            nextBtn.setVisible(currentManualPage < manualPages.length - 1);
+
+            backBtn.setBounds(frameX + 30, btnY, 260, 36);
+            prevBtn.setBounds(frameX + frameW - 350, btnY, 160, 36);
+            nextBtn.setBounds(frameX + frameW - 180, btnY, 160, 36);
+        }
     }
 
     @Override
     public void doLayout() {
         super.doLayout();
-        int w = getWidth();
-        int h = getHeight();
-        if (w == 0 || h == 0) return;
+        relayoutButtons();
+    }
 
-        // Positioned at the bottom-right desk area, matching the Back button in PlayPanel
-        int btnWidth = Math.max(90, (int) (w * 0.08));
-        int btnHeight = Math.max(35, (int) (h * 0.05));
-        int btnX = (int) (w * 0.88) - btnWidth;
-        int btnY = (int) (h * 0.92) - btnHeight;
+    private JButton createRetroButton(String text, Color baseColor) {
+        JButton btn = new JButton(text);
+        btn.setFont(new Font(Font.MONOSPACED, Font.BOLD, 14));
+        btn.setForeground(baseColor);
+        btn.setOpaque(false);
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-        backButton.setBounds(btnX, btnY, btnWidth, btnHeight);
+        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                btn.setForeground(Color.WHITE);
+            }
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                btn.setForeground(baseColor);
+            }
+        });
+        return btn;
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+        Graphics2D g2 = (Graphics2D) g.create();
+
+        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
+        g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+
+        int w = getWidth();
+        int h = getHeight();
+
+        // 1. Lab Background
         if (backgroundImage != null) {
-            g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
+            g2.drawImage(backgroundImage, 0, 0, w, h, this);
+        }
+
+        int frameX = 50;
+        int frameY = 35;
+        int frameW = w - 100;
+        int frameH = h - 70;
+
+        // 2. High-contrast Slate Terminal Plate
+        g2.setColor(SOLID_PLATE);
+        g2.fillRect(frameX, frameY, frameW, frameH);
+
+        // Double Border
+        g2.setColor(isVoiceoverActive ? WARNING_RED : CHALK_AMBER);
+        g2.setStroke(new BasicStroke(2));
+        g2.drawRect(frameX, frameY, frameW, frameH);
+        g2.drawRect(frameX + 4, frameY + 4, frameW - 8, frameH - 8);
+
+        if (isVoiceoverActive) {
+            renderEmergencyTransmission(g2, frameX, frameY, frameW, frameH);
         } else {
-            g.setColor(new Color(0x14, 0x12, 0x0E));
-            g.fillRect(0, 0, getWidth(), getHeight());
+            renderCleanManualPage(g2, frameX, frameY, frameW, frameH);
+        }
+
+        g2.dispose();
+    }
+
+    private void renderEmergencyTransmission(Graphics2D g2, int fx, int fy, int fw, int fh) {
+        // Glitch Static Scanlines
+        g2.setColor(new Color(255, 60, 60, 15 + (random.nextInt(20))));
+        for (int y = fy; y < fy + fh; y += 4) {
+            if ((y + glitchTicker) % 8 == 0) {
+                g2.drawLine(fx, y, fx + fw, y);
+            }
+        }
+
+        // Header Alert
+        g2.setFont(new Font(Font.MONOSPACED, Font.BOLD, 22));
+        g2.setColor(WARNING_RED);
+        g2.drawString("! INCOMING DISTRESS TRANSMISSION [AUDIO PLAYBACK] !", fx + 35, fy + 45);
+
+        g2.setFont(new Font(Font.MONOSPACED, Font.BOLD, 13));
+        g2.setColor(MUTED_GRAY);
+        g2.drawString("CHANNEL: 1974-VHF // SIGNAL INTEGRITY: 41% // STATUS: DECRYPTING...", fx + 35, fy + 72);
+
+        // Waveform / Oscilloscope Box
+        int waveBoxX = fx + 35;
+        int waveBoxY = fy + 95;
+        int waveBoxW = fw - 70;
+        int waveBoxH = 65;
+
+        g2.setColor(new Color(0x18, 0x08, 0x08));
+        g2.fillRect(waveBoxX, waveBoxY, waveBoxW, waveBoxH);
+        g2.setColor(WARNING_RED);
+        g2.drawRect(waveBoxX, waveBoxY, waveBoxW, waveBoxH);
+
+        // Erratic glitch waveform
+        g2.setStroke(new BasicStroke(1.5f));
+        int prevPx = waveBoxX + 10;
+        int prevPy = waveBoxY + (waveBoxH / 2);
+        for (int x = waveBoxX + 15; x < waveBoxX + waveBoxW - 10; x += 12) {
+            int spike = (random.nextInt(30) - 15);
+            int currPy = waveBoxY + (waveBoxH / 2) + spike;
+            g2.drawLine(prevPx, prevPy, x, currPy);
+            prevPx = x;
+            prevPy = currPy;
+        }
+
+        // Emergency Message Dispatch
+        int textY = waveBoxY + waveBoxH + 45;
+        g2.setFont(new Font(Font.MONOSPACED, Font.BOLD, 15));
+        g2.setColor(CHALK_AMBER);
+        g2.drawString(">> AUDIO LOG 'story.wav' STREAMING INTO OPERATOR CONSOLE...", fx + 35, textY);
+
+        g2.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
+        g2.setColor(GOLD_ACCENT);
+        g2.drawString("Listen carefully to the voice dispatch to understand the facility disaster.", fx + 35, textY + 30);
+        g2.drawString("Once playback concludes—or if you hit SKIP—the full operator manual", fx + 35, textY + 55);
+        g2.drawString("and system rules will decode cleanly below.", fx + 35, textY + 80);
+
+        g2.setColor(WARNING_RED);
+        g2.drawString("CRITICAL: PREPARE TO RESTORE CORRUPTED COGNITIVE CAPABILITIES.", fx + 35, textY + 125);
+    }
+
+    private void renderCleanManualPage(Graphics2D g2, int fx, int fy, int fw, int fh) {
+        // Top Document Ribbon
+        g2.setFont(new Font(Font.MONOSPACED, Font.BOLD, 12));
+        g2.setColor(MUTED_GRAY);
+        g2.drawString("FACILITY MANUAL // UP TACLOBAN AI CORE", fx + 30, fy + 32);
+
+        String pageTracker = String.format("PAGE %d OF %d", currentManualPage + 1, manualPages.length);
+        FontMetrics fm = g2.getFontMetrics();
+        g2.drawString(pageTracker, fx + fw - fm.stringWidth(pageTracker) - 30, fy + 32);
+
+        // Thin Divider
+        g2.setColor(MUTED_GRAY);
+        g2.drawLine(fx + 30, fy + 42, fx + fw - 30, fy + 42);
+
+        // Render Active Page
+        String[][] lines = manualPages[currentManualPage];
+        int startY = fy + 75;
+        int lineHeight = 24;
+
+        Font titleFont = new Font(Font.MONOSPACED, Font.BOLD, 18);
+        Font bodyFont = new Font(Font.MONOSPACED, Font.PLAIN, 14);
+
+        for (int i = 0; i < lines.length; i++) {
+            String txt = lines[i][0];
+            String type = lines[i][1];
+            int yPos = startY + (i * lineHeight);
+
+            if (type.equals("SPACE")) continue;
+
+            if (type.equals("TITLE")) {
+                g2.setFont(titleFont);
+                g2.setColor(CHALK_AMBER);
+            } else if (type.equals("GREEN")) {
+                g2.setFont(bodyFont);
+                g2.setColor(TERMINAL_GREEN);
+            } else if (type.equals("GOLD")) {
+                g2.setFont(bodyFont);
+                g2.setColor(GOLD_ACCENT);
+            } else if (type.equals("ALERT")) {
+                g2.setFont(bodyFont);
+                g2.setColor(WARNING_RED);
+            } else {
+                g2.setFont(bodyFont);
+                g2.setColor(CHALK_AMBER);
+            }
+
+            g2.drawString(txt, fx + 30, yPos);
         }
     }
 }
