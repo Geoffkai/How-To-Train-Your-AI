@@ -12,15 +12,21 @@ import com.howtotrainyourai.model.Question;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseMotionAdapter;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.GeneralPath;
+import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -61,6 +67,18 @@ public class ScenePanel extends JPanel implements GameScreen {
     private static final Color MARKER_FAIL = Color.decode("#c97a62");
     private static final Color MARKER_LATCH = Color.decode("#f4e6a8");
     private static final Color COLD_LIGHT = Color.decode("#cfeee2");
+    private static final BufferedImage GRAIN = loadTexture("/images/grain.png");
+    private static final BufferedImage STAIN = loadTexture("/images/stain.png");
+    private static final Map<String, BufferedImage> TEXTURE_CACHE = new HashMap<>();
+    private static final double PARALLAX_MAX = 4;
+
+    private static BufferedImage loadTexture(String path) {
+        try (var input = ScenePanel.class.getResourceAsStream(path)) {
+            return input == null ? null : ImageIO.read(input);
+        } catch (IOException e) {
+            return null;
+        }
+    }
 
     // capability unlock order, matches GameEngineImpl.CAPABILITY_UNLOCKS (Q3/5/8/10/13/15)
     private static final String[] CAPABILITY_NAMES = {
@@ -290,6 +308,7 @@ public class ScenePanel extends JPanel implements GameScreen {
     private int predictedConfidence;
     private double scale = 1;
     private double offsetX, offsetY;
+    private double parallaxX, parallaxY;
 
     public ScenePanel(CardPanel cardPanel) {
         this(cardPanel, null, null);
@@ -389,6 +408,19 @@ public class ScenePanel extends JPanel implements GameScreen {
             public void mousePressed(MouseEvent e) {
                 skipQuestionSweep();
                 wakeMonitor();
+            }
+        });
+        addMouseMotionListener(new MouseMotionAdapter() {
+            @Override public void mouseMoved(MouseEvent e) {
+                parallaxX = (0.5 - e.getX() / (double) Math.max(1, getWidth())) * PARALLAX_MAX;
+                parallaxY = (0.5 - e.getY() / (double) Math.max(1, getHeight())) * PARALLAX_MAX;
+                repaint();
+            }
+        });
+        addMouseListener(new MouseAdapter() {
+            @Override public void mouseExited(MouseEvent e) {
+                parallaxX = parallaxY = 0;
+                repaint();
             }
         });
 
@@ -830,20 +862,40 @@ public class ScenePanel extends JPanel implements GameScreen {
         g2.translate(offsetX, offsetY);
         g2.scale(scale, scale);
 
-        // background: the dead facility
-        g2.setColor(TILE);
-        g2.fillRect(0, 0, (int) LOGICAL_W, (int) LOGICAL_H);
-        g2.setColor(CEILING);
-        g2.fillRect(0, 0, (int) LOGICAL_W, (int) CEILING_H);
+        // distant facility shifts subtly; foreground controls keep their hit targets fixed
+        g2.translate(parallaxX, parallaxY);
+        paintWall(g2);
+        paintTexture(g2, new Rectangle(0, 0, (int) LOGICAL_W, (int) LOGICAL_H),
+                0, 0, LOGICAL_W, LOGICAL_H, 0.45f, 0.12f);
+        g2.setPaint(new GradientPaint(0, 0, Color.decode("#050706"), 0, (float) CEILING_H, CEILING));
+        g2.fillRect(-8, -8, (int) LOGICAL_W + 16, (int) CEILING_H + 16);
         paintLamps(g2);
-        g2.setColor(MINT);
+        g2.setPaint(new LinearGradientPaint((float) CAB_L_X, 0, (float) (CAB_L_X + CAB_L_W), 0,
+                new float[] { 0, 0.4f, 1 }, new Color[] { Color.decode("#3f5249"), MINT, Color.decode("#435a50") }));
         g2.fillRect((int) CAB_L_X, (int) CAB_L_Y, (int) CAB_L_W, (int) CAB_L_H);
-        g2.setColor(STEEL);
+        paintTexture(g2, new Rectangle((int) CAB_L_X, (int) CAB_L_Y, (int) CAB_L_W, (int) CAB_L_H),
+                CAB_L_X, CAB_L_Y, CAB_L_W, CAB_L_H, 0.85f, 0.16f);
+        g2.setColor(Color.decode("#1f2825"));
+        g2.fillRect((int) CAB_L_X, (int) CAB_L_Y, (int) CAB_L_W, 8);
+        g2.fillRect((int) CAB_L_X, (int) (CAB_L_Y + CAB_L_H - 8), (int) CAB_L_W, 8);
+        g2.setPaint(new LinearGradientPaint((float) CAB_R_X, 0, (float) (CAB_R_X + CAB_R_W), 0,
+                new float[] { 0, 0.45f, 1 }, new Color[] { Color.decode("#434d4a"), STEEL, Color.decode("#3d4643") }));
         g2.fillRect((int) CAB_R_X, (int) CAB_R_Y, (int) CAB_R_W, (int) CAB_R_H);
+        paintTexture(g2, new Rectangle((int) CAB_R_X, (int) CAB_R_Y, (int) CAB_R_W, (int) CAB_R_H),
+                CAB_R_X, CAB_R_Y, CAB_R_W, CAB_R_H, 0.85f, 0.16f);
+        g2.translate(-parallaxX, -parallaxY);
 
         // midground: the salvaged training station
-        g2.setColor(PAPER);
+        g2.setPaint(new LinearGradientPaint((float) STATION_X, (float) STATION_Y,
+                (float) (STATION_X + STATION_W), (float) (STATION_Y + STATION_H),
+                new float[] { 0, 0.55f, 1 },
+                new Color[] { Color.decode("#e2d4ab"), PAPER, Color.decode("#c7b484") }));
         g2.fillRect((int) STATION_X, (int) STATION_Y, (int) STATION_W, (int) STATION_H);
+        paintTexture(g2, new Rectangle((int) STATION_X, (int) STATION_Y,
+                (int) STATION_W, (int) STATION_H), STATION_X, STATION_Y, STATION_W, STATION_H, 0.85f, 0.16f);
+        g2.setColor(Color.decode("#9c8752"));
+        g2.setStroke(new BasicStroke(5));
+        g2.drawRect((int) STATION_X, (int) STATION_Y, (int) STATION_W, (int) STATION_H);
 
         paintLadder(g2);
 
@@ -863,14 +915,19 @@ public class ScenePanel extends JPanel implements GameScreen {
         // corners come from deskWidthAt() (see its comment), not hand-measured points --
         // the bottom pair sits at DESK_BOTTOM_Y (below the visible canvas by design),
         // clipped by the panel's own bounds same as the mockup's .desk bleed.
-        g2.setColor(WOOD_DARK);
         double deskTopW = deskWidthAt(DESK_TOP_Y);
         Polygon desk = new Polygon();
         desk.addPoint((int) (DESK_CENTER_X - deskTopW / 2), (int) DESK_TOP_Y);
         desk.addPoint((int) (DESK_CENTER_X + deskTopW / 2), (int) DESK_TOP_Y);
         desk.addPoint((int) (DESK_CENTER_X + DESK_BOTTOM_W / 2), (int) DESK_BOTTOM_Y);
         desk.addPoint((int) (DESK_CENTER_X - DESK_BOTTOM_W / 2), (int) DESK_BOTTOM_Y);
+        g2.setPaint(new LinearGradientPaint((float) DESK_CENTER_X, (float) DESK_Y,
+                (float) DESK_CENTER_X, (float) DESK_BOTTOM_Y,
+                new float[] { 0, 0.58f, 1 }, new Color[] {
+                        Color.decode("#7d6043"), Color.decode("#48351f"), Color.decode("#2a1c10") }));
         g2.fillPolygon(desk);
+        paintDeskGrain(g2, desk);
+        paintTexture(g2, desk, DESK_X, DESK_Y, DESK_W, DESK_H, 0.85f, 0.16f);
 
         // decorative backing panel behind the keybank/next row
         g2.setColor(WOOD_DARK);
@@ -883,6 +940,10 @@ public class ScenePanel extends JPanel implements GameScreen {
         g2.fillPolygon(taperedPolygon(SHELFBAR_X, SHELFBAR_Y, SHELFBAR_W, SHELFBAR_LIP_H));
         g2.setColor(WOOD_DARK);
         g2.fillPolygon(taperedPolygon(SHELFBAR_X, SHELFBAR_Y + SHELFBAR_LIP_H, SHELFBAR_W, SHELFBAR_H - SHELFBAR_LIP_H));
+        Polygon facade = taperedPolygon(SHELFBAR_X, SHELFBAR_Y + SHELFBAR_LIP_H,
+                SHELFBAR_W, SHELFBAR_H - SHELFBAR_LIP_H);
+        paintTexture(g2, facade, SHELFBAR_X, SHELFBAR_Y + SHELFBAR_LIP_H,
+                SHELFBAR_W, SHELFBAR_H - SHELFBAR_LIP_H, 0.85f, 0.16f);
         g2.fillPolygon(taperedPolygon(SHELF_X, SHELF_Y, SHELF_W, SHELF_H));
 
         g2.setColor(SHELF_WELL);
@@ -914,6 +975,64 @@ public class ScenePanel extends JPanel implements GameScreen {
         });
 
         g2.dispose();
+    }
+
+    private void paintTexture(Graphics2D g2, Shape clip, double x, double y, double w, double h,
+            float grainOpacity, float stainOpacity) {
+        if (GRAIN == null || STAIN == null) return;
+        int width = (int) Math.round(w), height = (int) Math.round(h);
+        String key = width + "x" + height + ":" + grainOpacity + ":" + stainOpacity;
+        BufferedImage overlay = TEXTURE_CACHE.computeIfAbsent(key,
+                ignored -> createTextureOverlay(width, height, grainOpacity, stainOpacity));
+        Graphics2D texture = (Graphics2D) g2.create();
+        texture.clip(clip);
+        texture.drawImage(overlay, (int) x, (int) y, null);
+        texture.dispose();
+    }
+
+    private static BufferedImage createTextureOverlay(int width, int height, float grainOpacity, float stainOpacity) {
+        BufferedImage overlay = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D texture = overlay.createGraphics();
+        texture.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, grainOpacity));
+        texture.setPaint(new TexturePaint(GRAIN, new Rectangle(0, 0, GRAIN.getWidth(), GRAIN.getHeight())));
+        texture.fillRect(0, 0, width, height);
+        texture.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, stainOpacity));
+        double scale = Math.max(width / (double) STAIN.getWidth(), height / (double) STAIN.getHeight());
+        double stainW = STAIN.getWidth() * scale, stainH = STAIN.getHeight() * scale;
+        texture.setPaint(new TexturePaint(STAIN, new java.awt.geom.Rectangle2D.Double(
+                (width - stainW) / 2, (height - stainH) / 2, stainW, stainH)));
+        texture.fillRect(0, 0, width, height);
+        texture.dispose();
+        return overlay;
+    }
+
+    private void paintWall(Graphics2D g2) {
+        g2.setColor(TILE);
+        g2.fillRect(-8, -8, (int) LOGICAL_W + 16, (int) LOGICAL_H + 16);
+        g2.setColor(new Color(57, 77, 72, 90));
+        for (int y = 62; y < LOGICAL_H; y += 62) g2.fillRect(0, y, (int) LOGICAL_W, 2);
+        for (int x = 94; x < LOGICAL_W; x += 94) g2.fillRect(x, 0, 2, (int) LOGICAL_H);
+        g2.setPaint(new RadialGradientPaint((float) LOGICAL_W / 2, (float) LOGICAL_H * 0.45f,
+                (float) LOGICAL_W * 0.58f, new float[] { 0.35f, 1 },
+                new Color[] { new Color(6, 9, 8, 0), new Color(6, 9, 8, 192) }));
+        g2.fillRect(0, 0, (int) LOGICAL_W, (int) LOGICAL_H);
+        g2.setPaint(new LinearGradientPaint(0, 0, 0, (float) LOGICAL_H,
+                new float[] { 0, 0.12f, 0.30f, 0.52f, 0.96f, 1 }, new Color[] {
+                        new Color(7, 10, 9, 240), new Color(11, 15, 14, 153),
+                        new Color(7, 10, 9, 0), new Color(7, 10, 9, 0),
+                        new Color(7, 10, 9, 245), new Color(7, 10, 9, 245) }));
+        g2.fillRect(0, 0, (int) LOGICAL_W, (int) LOGICAL_H);
+    }
+
+    private void paintDeskGrain(Graphics2D g2, Shape desk) {
+        Graphics2D lines = (Graphics2D) g2.create();
+        lines.clip(desk);
+        lines.rotate(Math.toRadians(-6), DESK_CENTER_X, DESK_BOTTOM_Y);
+        lines.setColor(new Color(0xd7, 0xbb, 0x84, 24));
+        for (int y = (int) DESK_Y; y < DESK_BOTTOM_Y + 40; y += 30) {
+            lines.drawLine(-100, y, 1700, y);
+        }
+        lines.dispose();
     }
 
     private void paintQuestionArm(Graphics2D g2) {
