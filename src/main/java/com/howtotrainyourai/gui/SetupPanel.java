@@ -3,7 +3,10 @@ package com.howtotrainyourai.gui;
 import com.howtotrainyourai.core.GameEngineFactory;
 import com.howtotrainyourai.engine.GameEngine;
 import com.howtotrainyourai.engine.Protocol;
+import com.howtotrainyourai.engine.RecordsStore;
 import java.awt.*;
+import java.io.IOException;
+import java.util.List;
 import javax.swing.*;
 
 /**
@@ -25,12 +28,16 @@ public class SetupPanel extends JPanel {
     private static final Font LABEL_FONT = new Font(Font.MONOSPACED, Font.BOLD, 15);
     private static final Font CONTROL_FONT = new Font(Font.MONOSPACED, Font.BOLD, 14);
 
+    private static final int LEADERBOARD_SIZE = 10;
+
     private final CardPanel cardPanel;
     private final GameScreen questionScreen;
     private final JTextField nameField;
     private final JRadioButton standardButton;
     private final JRadioButton highRiskButton;
     private final JLabel statusLabel;
+    private final JLabel[] leaderboardRows = new JLabel[LEADERBOARD_SIZE];
+    private final JLabel leaderboardStatus;
 
     public SetupPanel(CardPanel cardPanel, GameScreen questionScreen) {
         this.cardPanel = cardPanel;
@@ -125,6 +132,44 @@ public class SetupPanel extends JPanel {
         gbc.insets = new Insets(20, 0, 0, 0);
         add(statusLabel, gbc);
 
+        // Leaderboard: a second column beside the form, spanning all four rows.
+        JPanel board = new JPanel();
+        board.setLayout(new BoxLayout(board, BoxLayout.Y_AXIS));
+        board.setBackground(new Color(0x18, 0x15, 0x11));
+        board.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(GOLD, 2),
+                BorderFactory.createEmptyBorder(16, 20, 16, 20)));
+
+        JLabel boardTitle = new JLabel("TOP 10 OPERATORS");
+        boardTitle.setFont(LABEL_FONT);
+        boardTitle.setForeground(GOLD);
+        boardTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        board.add(boardTitle);
+        board.add(Box.createVerticalStrut(12));
+
+        // Fixed 10 slots so the panel never changes size as records accumulate.
+        for (int i = 0; i < LEADERBOARD_SIZE; i++) {
+            leaderboardRows[i] = new JLabel(formatRow(i + 1, null));
+            leaderboardRows[i].setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
+            leaderboardRows[i].setForeground(CHALK);
+            leaderboardRows[i].setAlignmentX(Component.LEFT_ALIGNMENT);
+            board.add(leaderboardRows[i]);
+            board.add(Box.createVerticalStrut(4));
+        }
+
+        leaderboardStatus = new JLabel(" ");
+        leaderboardStatus.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        leaderboardStatus.setForeground(MUTED);
+        leaderboardStatus.setAlignmentX(Component.LEFT_ALIGNMENT);
+        board.add(Box.createVerticalStrut(8));
+        board.add(leaderboardStatus);
+
+        gbc.gridx = 1;
+        gbc.gridy = 0;
+        gbc.gridheight = 4;
+        gbc.insets = new Insets(0, 40, 0, 0);
+        add(board, gbc);
+
         // Enter anywhere in the name field starts the session.
         nameField.addActionListener(e -> beginSession());
 
@@ -134,6 +179,7 @@ public class SetupPanel extends JPanel {
             @Override
             public void componentShown(java.awt.event.ComponentEvent e) {
                 reset();
+                refreshLeaderboard();
             }
         });
     }
@@ -145,6 +191,50 @@ public class SetupPanel extends JPanel {
         statusLabel.setText("ENTER OPERATOR ID AND SELECT A RESTORE PROTOCOL");
         statusLabel.setForeground(MUTED);
         nameField.requestFocusInWindow();
+    }
+
+    /**
+     * Reloads the top-10 board from the records file. Called every time this
+     * screen is shown, so a run that just finished appears on the next visit.
+     */
+    private void refreshLeaderboard() {
+        List<String[]> top;
+        try {
+            top = RecordsStore.topScores(LEADERBOARD_SIZE);
+        } catch (IOException e) {
+            top = List.of();
+            leaderboardStatus.setText("RECORD READ ERROR");
+            leaderboardStatus.setForeground(new Color(0xD6, 0x9B, 0x6B));
+            for (int i = 0; i < LEADERBOARD_SIZE; i++) {
+                leaderboardRows[i].setText(formatRow(i + 1, null));
+            }
+            return;
+        }
+
+        for (int i = 0; i < LEADERBOARD_SIZE; i++) {
+            leaderboardRows[i].setText(formatRow(i + 1, i < top.size() ? top.get(i) : null));
+        }
+        leaderboardStatus.setText(top.isEmpty() ? "NO RECORDS ON FILE" : " ");
+        leaderboardStatus.setForeground(MUTED);
+    }
+
+    /** One board line: rank, operator name (trimmed to fit), token score, mode. */
+    private static String formatRow(int rank, String[] record) {
+        if (record == null) {
+            return String.format("%2d. %-12s %5s  %-9s", rank, "---", "", "");
+        }
+        return String.format("%2d. %-12s %5s  %-9s",
+                rank, fit(record[0], 12), record[1].trim(), modeLabel(record[3]));
+    }
+
+    /** Protocol name from the records file, shown the way the setup screen words it. */
+    private static String modeLabel(String protocolName) {
+        return protocolName.trim().replace('_', ' ');
+    }
+
+    private static String fit(String value, int width) {
+        String clean = value.replace('\n', ' ').replace('\r', ' ');
+        return clean.length() <= width ? clean : clean.substring(0, width);
     }
 
     private void beginSession() {
