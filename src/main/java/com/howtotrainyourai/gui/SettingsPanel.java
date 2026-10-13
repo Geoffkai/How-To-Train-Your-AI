@@ -2,11 +2,14 @@ package com.howtotrainyourai.gui;
 
 import com.howtotrainyourai.engine.AudioManager;
 import com.howtotrainyourai.engine.QuestionSpeechService;
+import com.howtotrainyourai.engine.RecordsStore;
+import java.io.IOException;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Random;
 
 public class SettingsPanel extends JPanel {
@@ -48,11 +51,8 @@ public class SettingsPanel extends JPanel {
     private JButton viewRecordsBtn;
     private JButton backBtn;
 
-    // Highest record data
-    private static final int HIGHEST_SCORE = 1000;
-    private static final String TOP_OPERATOR = "MARK ASHER";
-    private static final String TOP_PROTOCOL = "HIGH RISK (2x)";
-    private static final String TOP_TIER = "SYNTHESIS [ONLINE]";
+    private List<String[]> records = List.of();
+    private String recordsError;
     public SettingsPanel(CardPanel cardPanel) {
         this(cardPanel, null, null);
     }
@@ -65,6 +65,7 @@ public class SettingsPanel extends JPanel {
         setBackground(new Color(0x10, 0x0E, 0x0C));
 
         loadLabImage();
+        refreshRecords();
         buildUI();
 
         // Runs at ~12.5 FPS for a low-frequency analog hum flicker + animated wave
@@ -152,19 +153,18 @@ public class SettingsPanel extends JPanel {
         viewRecordsBtn.setBounds(90, 315, 340, 30);
         viewRecordsBtn.addActionListener(e -> {
             SoundManager.playSound("/audio/flicker.wav", 100);
-            JOptionPane.showMessageDialog(
-                this,
-                "UP TACLOBAN MAINFRAME ARCHIVE // SECTOR 1974\n" +
-                "============================================\n" +
-                "TOP OPERATOR    : " + TOP_OPERATOR + "\n" +
-                "PEAK SCORE      : " + HIGHEST_SCORE + " TOKENS\n" +
-                "REACHED STAGE   : " + TOP_TIER + "\n" +
-                "ACTIVE PROTOCOL : " + TOP_PROTOCOL + "\n" +
-                "============================================\n" +
-                "STATUS: CORE RECOVERY VERIFIED",
-                "TRAINING ARCHIVE",
-                JOptionPane.INFORMATION_MESSAGE
-            );
+            refreshRecords();
+            JTextArea archive = new JTextArea(formatRecords());
+            archive.setEditable(false);
+            archive.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
+            archive.setForeground(CHALK_AMBER);
+            archive.setBackground(new Color(0x08, 0x0E, 0x0A));
+            archive.setCaretPosition(0);
+            JScrollPane scroll = new JScrollPane(archive);
+            scroll.setPreferredSize(new Dimension(620, 320));
+            JOptionPane.showMessageDialog(this, scroll, "RESTORATION TAPE // ARCHIVE",
+                    JOptionPane.PLAIN_MESSAGE);
+            repaint();
         });
         add(viewRecordsBtn);
 
@@ -315,10 +315,14 @@ public class SettingsPanel extends JPanel {
 
         g2.setFont(LOG_FONT);
         g2.setColor(ACTIVE_GOLD);
-        g2.drawString("PEAK SCORE : " + HIGHEST_SCORE + " TOKENS", boxX + 15, boxY + 25);
-        g2.drawString("OPERATOR   : " + TOP_OPERATOR, boxX + 15, boxY + 45);
+        String[] recordSummary = getBestRecord();
+        g2.drawString(recordsError != null ? "ARCHIVE : READ ERROR" : recordSummary == null ? "ARCHIVE : NO TRAINING RECORDS" :
+                "PEAK SCORE : " + recordSummary[1] + " TOKENS", boxX + 15, boxY + 25);
+        g2.drawString(recordsError != null ? "OPERATOR   : --" : recordSummary == null ? "OPERATOR   : --" :
+                "OPERATOR   : " + fit(recordSummary[0], 23), boxX + 15, boxY + 45);
         g2.setColor(CHALK_AMBER);
-        g2.drawString("FACULTY    : " + TOP_TIER, boxX + 15, boxY + 65);
+        g2.drawString(recordsError != null ? "FACULTY    : CHECK TRAINING TAPE" : recordSummary == null ? "FACULTY    : --" :
+                "FACULTY    : " + fit(recordSummary[2], 23), boxX + 15, boxY + 65);
 
         // 4. Animated CRT ECG Oscilloscope (Bottom-Right)
         int ecgW = 160;
@@ -349,5 +353,51 @@ public class SettingsPanel extends JPanel {
         }
 
         g2.dispose();
+    }
+
+    private void refreshRecords() {
+        try {
+            records = RecordsStore.readAll();
+            recordsError = null;
+        } catch (IOException e) {
+            records = List.of();
+            recordsError = e.getMessage();
+        }
+    }
+
+    private String[] getBestRecord() {
+        String[] best = null;
+        int bestScore = Integer.MIN_VALUE;
+        for (String[] record : records) {
+            try {
+                int score = Integer.parseInt(record[1]);
+                if (score > bestScore) {
+                    best = record;
+                    bestScore = score;
+                }
+            } catch (NumberFormatException ignored) {}
+        }
+        return best;
+    }
+
+    private String formatRecords() {
+        StringBuilder text = new StringBuilder("UP TACLOBAN RESTORATION BAY // SESSION TAPE\n")
+                .append("==============================================================\n");
+        if (recordsError != null) return text.append("TAPE READ ERROR: ").append(recordsError).append('\n').toString();
+        if (records.isEmpty()) return text.append("NO TRAINING RECORDS ON FILE\n").toString();
+        int first = Math.max(0, records.size() - 20);
+        for (int i = records.size() - 1; i >= first; i--) {
+            String[] record = records.get(i);
+            text.append(String.format("%s | %s tokens | %s | %s | %s%n",
+                    fit(record[0], 18), fit(record[1], 5), fit(record[2], 16),
+                    fit(record[3], 9), fit(record[4], 6)));
+        }
+        if (first > 0) text.append("... earlier sessions remain on tape\n");
+        return text.toString();
+    }
+
+    private static String fit(String value, int width) {
+        String clean = value.replace('\n', ' ').replace('\r', ' ');
+        return clean.length() <= width ? clean : clean.substring(0, width);
     }
 }
