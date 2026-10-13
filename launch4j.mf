@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Main-Class: com.howtotrainyourai.core.Main
+Class-Path: lib/freetts/freetts.jar lib/freetts/cmulex.jar
+ lib/freetts/en_us.jar lib/freetts/cmudict04.jar lib/freetts/cmu_us_kal.jar

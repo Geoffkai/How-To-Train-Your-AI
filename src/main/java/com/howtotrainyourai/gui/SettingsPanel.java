@@ -1,10 +1,15 @@
 package com.howtotrainyourai.gui;
 
+import com.howtotrainyourai.engine.AudioManager;
+import com.howtotrainyourai.engine.QuestionSpeechService;
+import com.howtotrainyourai.engine.RecordsStore;
+import java.io.IOException;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Random;
 
 public class SettingsPanel extends JPanel {
@@ -22,6 +27,8 @@ public class SettingsPanel extends JPanel {
     private static final Font LOG_FONT = new Font(Font.MONOSPACED, Font.BOLD, 13);
 
     private final CardPanel cardPanel;
+    private final AudioManager audioManager;
+    private final QuestionSpeechService speechService;
     private BufferedImage backgroundImage;
     private final Random random = new Random();
 
@@ -33,25 +40,32 @@ public class SettingsPanel extends JPanel {
     // Controls
     private JSlider musicSlider;
     private JSlider sfxSlider;
+    private JSlider speechSlider;
+    private JCheckBox speakQuestions;
+    private JLabel musicValue;
+    private JLabel sfxValue;
+    private JLabel speechValue;
+    private JLabel musicLabel;
+    private JLabel sfxLabel;
+    private JLabel speechLabel;
     private JButton viewRecordsBtn;
     private JButton backBtn;
 
-    // Persisted volume values
-    private static int musicVolume = 74;
-    private static int sfxVolume = 58;
-
-    // Highest record data
-    private static final int HIGHEST_SCORE = 1000;
-    private static final String TOP_OPERATOR = "MARK ASHER";
-    private static final String TOP_PROTOCOL = "HIGH RISK (2x)";
-    private static final String TOP_TIER = "SYNTHESIS [ONLINE]";
-
+    private List<String[]> records = List.of();
+    private String recordsError;
     public SettingsPanel(CardPanel cardPanel) {
+        this(cardPanel, null, null);
+    }
+
+    public SettingsPanel(CardPanel cardPanel, AudioManager audioManager, QuestionSpeechService speechService) {
         this.cardPanel = cardPanel;
+        this.audioManager = audioManager;
+        this.speechService = speechService;
         setLayout(null);
         setBackground(new Color(0x10, 0x0E, 0x0C));
 
         loadLabImage();
+        refreshRecords();
         buildUI();
 
         // Runs at ~12.5 FPS for a low-frequency analog hum flicker + animated wave
@@ -83,37 +97,56 @@ public class SettingsPanel extends JPanel {
         // ==========================================
         // 1. AUDIO CALIBRATION
         // ==========================================
-        JLabel musicLbl = createLabel("MUSIC VOLUME:");
-        musicLbl.setBounds(90, 160, 160, 25);
-        add(musicLbl);
-
-        musicSlider = createSlider(0, 100, musicVolume);
-        musicSlider.setBounds(260, 160, 230, 25);
+        musicLabel = createLabel("MUSIC VOLUME:");
+        musicSlider = createSlider(0, 100,
+                audioManager == null ? 70 : Math.round(audioManager.getMusicVolume() * 100));
         add(musicSlider);
-
-        JLabel musicVal = createValueLabel(musicVolume + "%");
-        musicVal.setBounds(505, 160, 60, 25);
+        add(musicLabel);
+        musicValue = createValueLabel(musicSlider.getValue() + "%");
         musicSlider.addChangeListener(e -> {
-            musicVolume = musicSlider.getValue();
-            musicVal.setText(musicVolume + "%");
+            int value = musicSlider.getValue();
+            musicValue.setText(value + "%");
+            if (audioManager != null) audioManager.setMusicVolume(value / 100f);
         });
-        add(musicVal);
+        add(musicValue);
 
-        JLabel sfxLbl = createLabel("SFX RELAY:");
-        sfxLbl.setBounds(90, 210, 160, 25);
-        add(sfxLbl);
-
-        sfxSlider = createSlider(0, 100, sfxVolume);
-        sfxSlider.setBounds(260, 210, 230, 25);
+        sfxLabel = createLabel("SFX RELAY:");
+        sfxSlider = createSlider(0, 100,
+                audioManager == null ? 70 : Math.round(audioManager.getSfxVolume() * 100));
+        SoundManager.setSfxVolume(sfxSlider.getValue() / 100f);
         add(sfxSlider);
-
-        JLabel sfxVal = createValueLabel(sfxVolume + "%");
-        sfxVal.setBounds(505, 210, 60, 25);
+        add(sfxLabel);
+        sfxValue = createValueLabel(sfxSlider.getValue() + "%");
         sfxSlider.addChangeListener(e -> {
-            sfxVolume = sfxSlider.getValue();
-            sfxVal.setText(sfxVolume + "%");
+            int value = sfxSlider.getValue();
+            sfxValue.setText(value + "%");
+            if (audioManager != null) audioManager.setSfxVolume(value / 100f);
+            SoundManager.setSfxVolume(value / 100f);
         });
-        add(sfxVal);
+        add(sfxValue);
+
+        speechLabel = createLabel("SPEECH VOLUME:");
+        speechSlider = createSlider(0, 100,
+                speechService == null ? 100 : Math.round(speechService.getVolume() * 100));
+        add(speechSlider);
+        add(speechLabel);
+        speechValue = createValueLabel(speechSlider.getValue() + "%");
+        speechSlider.addChangeListener(e -> {
+            int value = speechSlider.getValue();
+            speechValue.setText(value + "%");
+            if (speechService != null) speechService.setVolume(value / 100f);
+        });
+        add(speechValue);
+
+        speakQuestions = new JCheckBox("SPEAK QUESTIONS", speechService == null || speechService.isEnabled());
+        speakQuestions.setFont(MONO_FONT);
+        speakQuestions.setForeground(CHALK_AMBER);
+        speakQuestions.setOpaque(false);
+        speakQuestions.setFocusPainted(false);
+        speakQuestions.addActionListener(e -> {
+            if (speechService != null) speechService.setEnabled(speakQuestions.isSelected());
+        });
+        add(speakQuestions);
 
         // ==========================================
         // 2. DATA MANAGEMENT & ARCHIVE
@@ -122,19 +155,18 @@ public class SettingsPanel extends JPanel {
         viewRecordsBtn.setBounds(90, 315, 340, 30);
         viewRecordsBtn.addActionListener(e -> {
             SoundManager.playSound("/audio/flicker.wav", 100);
-            JOptionPane.showMessageDialog(
-                this,
-                "UP TACLOBAN MAINFRAME ARCHIVE // SECTOR 1974\n" +
-                "============================================\n" +
-                "TOP OPERATOR    : " + TOP_OPERATOR + "\n" +
-                "PEAK SCORE      : " + HIGHEST_SCORE + " TOKENS\n" +
-                "REACHED STAGE   : " + TOP_TIER + "\n" +
-                "ACTIVE PROTOCOL : " + TOP_PROTOCOL + "\n" +
-                "============================================\n" +
-                "STATUS: CORE RECOVERY VERIFIED",
-                "TRAINING ARCHIVE",
-                JOptionPane.INFORMATION_MESSAGE
-            );
+            refreshRecords();
+            JTextArea archive = new JTextArea(formatRecords());
+            archive.setEditable(false);
+            archive.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
+            archive.setForeground(CHALK_AMBER);
+            archive.setBackground(new Color(0x08, 0x0E, 0x0A));
+            archive.setCaretPosition(0);
+            JScrollPane scroll = new JScrollPane(archive);
+            scroll.setPreferredSize(new Dimension(620, 320));
+            JOptionPane.showMessageDialog(this, scroll, "RESTORATION TAPE // ARCHIVE",
+                    JOptionPane.PLAIN_MESSAGE);
+            repaint();
         });
         add(viewRecordsBtn);
 
@@ -196,6 +228,37 @@ public class SettingsPanel extends JPanel {
     }
 
     @Override
+    public void doLayout() {
+        super.doLayout();
+        int w = getWidth();
+        int h = getHeight();
+        if (w == 0 || h == 0) return;
+
+        int labelX = 90;
+        int labelWidth = 160;
+        int sliderX = 260;
+        int sliderWidth = Math.min(230, Math.max(150, w - 610));
+        int valueX = sliderX + sliderWidth + 15;
+        int rowHeight = 26;
+        int[] rowY = { 150, 182, 214 };
+        JLabel[] labels = { musicLabel, sfxLabel, speechLabel };
+        JSlider[] sliders = { musicSlider, sfxSlider, speechSlider };
+        JLabel[] values = { musicValue, sfxValue, speechValue };
+        for (int i = 0; i < sliders.length; i++) {
+            labels[i].setBounds(labelX, rowY[i], labelWidth, rowHeight);
+            sliders[i].setBounds(sliderX, rowY[i], sliderWidth, rowHeight);
+            values[i].setBounds(valueX, rowY[i], 60, rowHeight);
+        }
+        speakQuestions.setBounds(labelX, 250, labelWidth + sliderWidth, rowHeight);
+        viewRecordsBtn.setBounds(90, 315, 340, 30);
+        backBtn.setBounds(70, h - 80, 260, 35);
+    }
+
+    public void shutdown() {
+        fxTimer.stop();
+    }
+
+    @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g.create();
@@ -254,10 +317,14 @@ public class SettingsPanel extends JPanel {
 
         g2.setFont(LOG_FONT);
         g2.setColor(ACTIVE_GOLD);
-        g2.drawString("PEAK SCORE : " + HIGHEST_SCORE + " TOKENS", boxX + 15, boxY + 25);
-        g2.drawString("OPERATOR   : " + TOP_OPERATOR, boxX + 15, boxY + 45);
+        String[] recordSummary = getBestRecord();
+        g2.drawString(recordsError != null ? "ARCHIVE : READ ERROR" : recordSummary == null ? "ARCHIVE : NO TRAINING RECORDS" :
+                "PEAK SCORE : " + recordSummary[1] + " TOKENS", boxX + 15, boxY + 25);
+        g2.drawString(recordsError != null ? "OPERATOR   : --" : recordSummary == null ? "OPERATOR   : --" :
+                "OPERATOR   : " + fit(recordSummary[0], 23), boxX + 15, boxY + 45);
         g2.setColor(CHALK_AMBER);
-        g2.drawString("FACULTY    : " + TOP_TIER, boxX + 15, boxY + 65);
+        g2.drawString(recordsError != null ? "FACULTY    : CHECK TRAINING TAPE" : recordSummary == null ? "FACULTY    : --" :
+                "FACULTY    : " + fit(recordSummary[2], 23), boxX + 15, boxY + 65);
 
         // 4. Animated CRT ECG Oscilloscope (Bottom-Right)
         int ecgW = 160;
@@ -288,5 +355,51 @@ public class SettingsPanel extends JPanel {
         }
 
         g2.dispose();
+    }
+
+    private void refreshRecords() {
+        try {
+            records = RecordsStore.readAll();
+            recordsError = null;
+        } catch (IOException e) {
+            records = List.of();
+            recordsError = e.getMessage();
+        }
+    }
+
+    private String[] getBestRecord() {
+        String[] best = null;
+        int bestScore = Integer.MIN_VALUE;
+        for (String[] record : records) {
+            try {
+                int score = Integer.parseInt(record[1]);
+                if (score > bestScore) {
+                    best = record;
+                    bestScore = score;
+                }
+            } catch (NumberFormatException ignored) {}
+        }
+        return best;
+    }
+
+    private String formatRecords() {
+        StringBuilder text = new StringBuilder("UP TACLOBAN RESTORATION BAY // SESSION TAPE\n")
+                .append("==============================================================\n");
+        if (recordsError != null) return text.append("TAPE READ ERROR: ").append(recordsError).append('\n').toString();
+        if (records.isEmpty()) return text.append("NO TRAINING RECORDS ON FILE\n").toString();
+        int first = Math.max(0, records.size() - 20);
+        for (int i = records.size() - 1; i >= first; i--) {
+            String[] record = records.get(i);
+            text.append(String.format("%s | %s tokens | %s | %s | %s%n",
+                    fit(record[0], 18), fit(record[1], 5), fit(record[2], 16),
+                    fit(record[3], 9), fit(record[4], 6)));
+        }
+        if (first > 0) text.append("... earlier sessions remain on tape\n");
+        return text.toString();
+    }
+
+    private static String fit(String value, int width) {
+        String clean = value.replace('\n', ' ').replace('\r', ' ');
+        return clean.length() <= width ? clean : clean.substring(0, width);
     }
 }

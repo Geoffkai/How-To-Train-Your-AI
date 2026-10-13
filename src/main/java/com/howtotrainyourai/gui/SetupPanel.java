@@ -16,82 +16,100 @@ import javax.swing.*;
  * place instead of spread across the menu and the question screen.
  */
 
-// Placeholder lang po to
 public class SetupPanel extends JPanel {
+
+    private static final Color CHALK = new Color(0xF2, 0xEC, 0xD8);
+    private static final Color MUTED = new Color(0x7C, 0x7E, 0x5D);
+    private static final Color GOLD = new Color(0xC2, 0xA6, 0x6E);
+    private static final Color PLATE = new Color(0x0C, 0x0A, 0x09);
+    private static final Font LABEL_FONT = new Font(Font.MONOSPACED, Font.BOLD, 15);
+    private static final Font CONTROL_FONT = new Font(Font.MONOSPACED, Font.BOLD, 14);
 
     private final CardPanel cardPanel;
     private final GameScreen questionScreen;
     private final JTextField nameField;
     private final JRadioButton standardButton;
     private final JRadioButton highRiskButton;
+    private final JLabel statusLabel;
 
     public SetupPanel(CardPanel cardPanel, GameScreen questionScreen) {
         this.cardPanel = cardPanel;
         this.questionScreen = questionScreen;
 
-        setBackground(Color.WHITE);
+        setBackground(PLATE);
         setLayout(new GridBagLayout());
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.anchor = GridBagConstraints.CENTER;
 
-        JLabel titleLabel = new JLabel("Begin Restoration");
-        titleLabel.setFont(new Font("SansSerif", Font.PLAIN, 36));
+        JLabel titleLabel = new JLabel("RESTORATION BAY // OPERATOR INTAKE");
+        titleLabel.setFont(new Font(Font.MONOSPACED, Font.BOLD, 24));
+        titleLabel.setForeground(CHALK);
         gbc.gridy = 0;
-        gbc.insets = new Insets(0, 0, 40, 0);
+        gbc.insets = new Insets(0, 0, 28, 0);
         add(titleLabel, gbc);
 
         JPanel form = new JPanel(new GridBagLayout());
-        form.setBackground(Color.WHITE);
+        form.setBackground(new Color(0x18, 0x15, 0x11));
+        form.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(GOLD, 2),
+                BorderFactory.createEmptyBorder(20, 24, 20, 24)));
         GridBagConstraints fgbc = new GridBagConstraints();
         fgbc.anchor = GridBagConstraints.WEST;
-        fgbc.insets = new Insets(0, 0, 10, 10);
+        fgbc.insets = new Insets(0, 0, 12, 12);
 
         fgbc.gridx = 0;
         fgbc.gridy = 0;
-        form.add(new JLabel("Trainer name:"), fgbc);
+        form.add(createLabel("OPERATOR ID:"), fgbc);
 
         nameField = new JTextField(18);
-        nameField.setFont(new Font("SansSerif", Font.PLAIN, 16));
+        nameField.setFont(CONTROL_FONT);
+        nameField.setForeground(CHALK);
+        nameField.setCaretColor(CHALK);
+        nameField.setBackground(new Color(0x08, 0x0E, 0x0A));
+        nameField.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(MUTED), BorderFactory.createEmptyBorder(5, 7, 5, 7)));
         fgbc.gridx = 1;
         form.add(nameField, fgbc);
 
         fgbc.gridx = 0;
         fgbc.gridy = 1;
-        fgbc.insets = new Insets(20, 0, 10, 10);
-        form.add(new JLabel("Protocol:"), fgbc);
+        fgbc.insets = new Insets(14, 0, 8, 12);
+        form.add(createLabel("RESTORE MODE:"), fgbc);
 
         // Labels spell out what each protocol actually changes, the same way
         // TerminalGameLoop's prompt does -- the player can't pick sensibly
         // from the bare names alone.
-        standardButton = new JRadioButton("Standard    (3 lifelines, checkpoints at Q5 and Q10)", true);
-        highRiskButton = new JRadioButton("High Risk   (2 lifelines, checkpoint at Q5, double tokens)");
+        standardButton = new JRadioButton("STANDARD  /  full validation, 3 service tools, Q5 + Q10 safepoints", true);
+        highRiskButton = new JRadioButton("HIGH RISK / 2 service tools, Q5 safepoint, double recovery units");
         ButtonGroup protocolGroup = new ButtonGroup();
         protocolGroup.add(standardButton);
         protocolGroup.add(highRiskButton);
         for (JRadioButton button : new JRadioButton[] { standardButton, highRiskButton }) {
-            button.setBackground(Color.WHITE);
+            button.setBackground(new Color(0x18, 0x15, 0x11));
+            button.setForeground(CHALK);
             button.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
+            button.setFocusPainted(false);
         }
 
         JPanel protocolPanel = new JPanel(new GridLayout(2, 1, 0, 4));
-        protocolPanel.setBackground(Color.WHITE);
+        protocolPanel.setBackground(new Color(0x18, 0x15, 0x11));
         protocolPanel.add(standardButton);
         protocolPanel.add(highRiskButton);
         fgbc.gridx = 1;
         form.add(protocolPanel, fgbc);
 
         gbc.gridy = 1;
-        gbc.insets = new Insets(0, 0, 40, 0);
+        gbc.insets = new Insets(0, 0, 22, 0);
         add(form, gbc);
 
         JPanel buttonRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
-        buttonRow.setBackground(Color.WHITE);
+        buttonRow.setOpaque(false);
 
-        JButton backButton = createButton("Back");
+        JButton backButton = createButton("[ ABORT ]");
         backButton.addActionListener(e -> cardPanel.showScreen(CardPanel.MENU));
-        JButton beginButton = createButton("Begin");
+        JButton beginButton = createButton("[ START RESTORATION ]");
         beginButton.addActionListener(e -> beginSession());
         buttonRow.add(backButton);
         buttonRow.add(beginButton);
@@ -99,6 +117,13 @@ public class SetupPanel extends JPanel {
         gbc.gridy = 2;
         gbc.insets = new Insets(0, 0, 0, 0);
         add(buttonRow, gbc);
+
+        statusLabel = new JLabel("ENTER OPERATOR ID AND SELECT A RESTORE PROTOCOL");
+        statusLabel.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        statusLabel.setForeground(MUTED);
+        gbc.gridy = 3;
+        gbc.insets = new Insets(20, 0, 0, 0);
+        add(statusLabel, gbc);
 
         // Enter anywhere in the name field starts the session.
         nameField.addActionListener(e -> beginSession());
@@ -117,14 +142,16 @@ public class SetupPanel extends JPanel {
     public void reset() {
         nameField.setText("");
         standardButton.setSelected(true);
+        statusLabel.setText("ENTER OPERATOR ID AND SELECT A RESTORE PROTOCOL");
+        statusLabel.setForeground(MUTED);
         nameField.requestFocusInWindow();
     }
 
     private void beginSession() {
         String trainerName = nameField.getText().trim();
         if (trainerName.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Enter a trainer name first.",
-                    "Name required", JOptionPane.WARNING_MESSAGE);
+            statusLabel.setText("OPERATOR ID REQUIRED // SESSION NOT STARTED");
+            statusLabel.setForeground(new Color(0xD6, 0x9B, 0x6B));
             nameField.requestFocusInWindow();
             return;
         }
@@ -140,9 +167,8 @@ public class SetupPanel extends JPanel {
             engine = GameEngineFactory.createDefault();
             engine.startSession(trainerName, protocol);
         } catch (RuntimeException e) {
-            JOptionPane.showMessageDialog(this,
-                    "Could not start a session:\n" + e.getMessage(),
-                    "Question bank problem", JOptionPane.ERROR_MESSAGE);
+            statusLabel.setText("BANK ERROR // " + e.getMessage());
+            statusLabel.setForeground(new Color(0xD6, 0x9B, 0x6B));
             return;
         }
 
@@ -152,10 +178,19 @@ public class SetupPanel extends JPanel {
 
     private JButton createButton(String text) {
         JButton button = new JButton(text);
-        button.setFont(new Font("SansSerif", Font.PLAIN, 18));
-        button.setBackground(new Color(224, 224, 224));
+        button.setFont(CONTROL_FONT);
+        button.setForeground(CHALK);
+        button.setBackground(new Color(0x28, 0x22, 0x18));
         button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180)));
+        button.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(GOLD), BorderFactory.createEmptyBorder(8, 12, 8, 12)));
         return button;
+    }
+
+    private JLabel createLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(LABEL_FONT);
+        label.setForeground(GOLD);
+        return label;
     }
 }

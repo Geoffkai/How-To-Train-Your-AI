@@ -3,8 +3,24 @@ package com.howtotrainyourai.gui;
 import javax.sound.sampled.*;
 import java.io.BufferedInputStream;
 import java.io.InputStream;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class SoundManager {
+
+    private static final CopyOnWriteArrayList<Clip> clips = new CopyOnWriteArrayList<>();
+    private static volatile float sfxVolume = 1f;
+
+    public static void setSfxVolume(float volume) {
+        sfxVolume = Math.max(0f, Math.min(1f, volume));
+        for (Clip clip : clips) {
+            if (clip.isOpen()) applyVolume(clip, sfxVolume);
+            else clips.remove(clip);
+        }
+    }
+
+    public static float getSfxVolume() {
+        return sfxVolume;
+    }
 
     /**
      * Plays a .wav sound clip once in the background.
@@ -28,6 +44,16 @@ public class SoundManager {
 
                     Clip clip = AudioSystem.getClip();
                     clip.open(audioStream);
+                    clips.add(clip);
+                    applyVolume(clip, sfxVolume);
+                    if (durationMs <= 0) {
+                        clip.addLineListener(event -> {
+                            if (event.getType() == LineEvent.Type.STOP) {
+                                clip.close();
+                                clips.remove(clip);
+                            }
+                        });
+                    }
                     clip.start();
 
                     if (durationMs > 0) {
@@ -37,6 +63,7 @@ public class SoundManager {
                         Thread.sleep(durationMs);
                         clip.stop();
                         clip.close();
+                        clips.remove(clip);
                     }
                 }
             } catch (Exception e) {
@@ -59,6 +86,8 @@ public class SoundManager {
 
                 Clip clip = AudioSystem.getClip();
                 clip.open(audioStream);
+                clips.add(clip);
+                applyVolume(clip, sfxVolume);
                 return clip;
             }
         } catch (Exception e) {
@@ -82,10 +111,12 @@ public class SoundManager {
                 }
 
                 clip.start();
+                applyVolume(clip, sfxVolume);
                 if (durationMs > 0) {
                     Thread.sleep(durationMs);
                     clip.stop();
                     clip.close();
+                    clips.remove(clip);
                 }
             } catch (Exception e) {
                 System.err.println("[SoundManager] Error playing preloaded clip: " + e.getMessage());
@@ -101,10 +132,18 @@ public class SoundManager {
         new Thread(() -> {
             try {
                 clip.setFramePosition(0);
+                applyVolume(clip, sfxVolume);
                 clip.loop(Clip.LOOP_CONTINUOUSLY);
             } catch (Exception e) {
                 System.err.println("[SoundManager] Error looping clip: " + e.getMessage());
             }
         }).start();
+    }
+
+    private static void applyVolume(Clip clip, float volume) {
+        if (!clip.isControlSupported(FloatControl.Type.MASTER_GAIN)) return;
+        FloatControl gain = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+        float decibels = volume == 0f ? gain.getMinimum() : (float) (20 * Math.log10(volume));
+        gain.setValue(Math.max(gain.getMinimum(), Math.min(gain.getMaximum(), decibels)));
     }
 }

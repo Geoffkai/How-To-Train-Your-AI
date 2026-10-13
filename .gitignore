@@ -13,6 +13,7 @@ bin/
 
 # Package Files #
 *.jar
+!lib/freetts/*.jar
 *.war
 *.nar
 *.ear
@@ -33,5 +34,4 @@ PROJECT_STARTUP_FRAMEWORK.md
 
 # Understand-Anything knowledge graph cache (local dev tool, regenerate with /understand)
 .ua/
-
 

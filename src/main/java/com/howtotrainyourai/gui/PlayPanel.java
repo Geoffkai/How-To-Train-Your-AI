@@ -234,7 +234,6 @@ public class PlayPanel extends JPanel implements GameScreen {
     /**
      * Starts rendering a session that SetupPanel has already started on the engine.
      */
-
     @Override
     public void startGame(GameEngine engine) {
         this.engine = engine;
@@ -251,8 +250,12 @@ public class PlayPanel extends JPanel implements GameScreen {
      * call the engine would sit believing the run is still live.
      */
     private void leaveSession() {
-        if (engine != null && !sessionOver) {
-            engine.endSession();
+        if (engine != null) {
+            try {
+                engine.endSession();
+            } catch (java.io.UncheckedIOException e) {
+                JOptionPane.showMessageDialog(this, e.getMessage(), "Training record error", JOptionPane.ERROR_MESSAGE);
+            }
             sessionOver = true;
         }
         cardPanel.showScreen(CardPanel.MENU);
