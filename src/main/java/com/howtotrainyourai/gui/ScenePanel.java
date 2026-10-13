@@ -6,6 +6,7 @@ import com.howtotrainyourai.engine.Lifeline;
 import com.howtotrainyourai.engine.LifelineResult;
 import com.howtotrainyourai.engine.Protocol;
 import com.howtotrainyourai.engine.QuestionSpeechService;
+import com.howtotrainyourai.engine.SessionResult;
 import com.howtotrainyourai.engine.TurnResult;
 import com.howtotrainyourai.model.Choice;
 import com.howtotrainyourai.model.Question;
@@ -59,6 +60,9 @@ public class ScenePanel extends JPanel implements GameScreen {
     private static final Color CHALK_YELLOW = Color.decode("#e6d38c");
     private static final Color TAPE_GREEN = Color.decode("#4c6b4f");
     private static final Color TAPE_RED = Color.decode("#8c3b2e");
+    private static final Color PAPER_INK = Color.decode("#2e2618");
+    private static final Color PAPER_GOOD = Color.decode("#3c4a22");
+    private static final Color PAPER_BAD = Color.decode("#86382a");
     private static final Color CEILING = Color.decode("#12201c");
     // mockup .bay/.cell background (#0a0706/#141210/#1b211f/#0f1312 are all close
     // near-blacks in the mockup; one well color covers all of them here)
@@ -111,7 +115,7 @@ public class ScenePanel extends JPanel implements GameScreen {
     private static final Font FONT_ANSWER = new Font(Font.MONOSPACED, Font.PLAIN, 16);
     private static final Font FONT_LABEL = new Font(Font.MONOSPACED, Font.BOLD, 12);
     private static final Font FONT_LIFELINE = new Font(Font.MONOSPACED, Font.BOLD, 8);
-    private static final Font FONT_PAPER = new Font(Font.MONOSPACED, Font.PLAIN, 12);
+    private static final Font FONT_PAPER = new Font(Font.MONOSPACED, Font.PLAIN, 14);
 
     // logical (1600x1000) layout rects, pulled from the mockup's percentage positions
     private static final double CEILING_H = 60;
@@ -125,8 +129,8 @@ public class ScenePanel extends JPanel implements GameScreen {
     private static final int MARKER_ROLLBACK_MS = 900;
     private static final double BOARD_X = 208, BOARD_Y = 205, BOARD_W = 1136, BOARD_H = 440;
     private static final double LEDGE_X = 195, LEDGE_Y = 673, LEDGE_W = 1162, LEDGE_H = 24;
-    private static final int LINE_HEIGHT = 14;
-    private static final int PAPER_FEED_MS = 180;
+    private static final int PAPER_LINE_HEIGHT = 18;
+    private static final int PAPER_FEED_MS = 300;
     private static final int QUESTION_SWEEP_MS = 1500;
     private static final double MONITOR_X = 1288, MONITOR_Y = 610, MONITOR_W = 272, MONITOR_H = 270;
     private static final double BACK_X = 20, BACK_Y = 20, BACK_W = 80, BACK_H = 30;
@@ -252,8 +256,8 @@ public class ScenePanel extends JPanel implements GameScreen {
     private final JButton backButton;
     private final List<String> paperLines = new ArrayList<>();
     private final List<Boolean> paperGood = new ArrayList<>();
+    private final List<Long> paperLineTimes = new ArrayList<>();
     private Timer paperFeedTimer;
-    private double paperFeedT = 1;
     private Timer countdownTimer;
     private int countdownSeconds;
     private Timer endingTimer;
@@ -501,6 +505,7 @@ public class ScenePanel extends JPanel implements GameScreen {
         java.util.Arrays.fill(ladderOutcomes, null);
         paperLines.clear();
         paperGood.clear();
+        paperLineTimes.clear();
         if (markerAnimTimer != null) {
             markerAnimTimer.stop();
         }
@@ -510,7 +515,6 @@ public class ScenePanel extends JPanel implements GameScreen {
         if (paperFeedTimer != null) {
             paperFeedTimer.stop();
         }
-        paperFeedT = 1;
         markerPos = 0;
         markerTarget = 0;
         markerFailed = false;
@@ -530,8 +534,8 @@ public class ScenePanel extends JPanel implements GameScreen {
         heartRate = 72;
         faceX = (MONITOR_W - 28) / 2.0 - FACE_W / 2.0;
         faceY = (MONITOR_H - 28) / 2.0 - FACE_H / 2.0;
-        print("BAY 04 LINK OPEN", true);
-        print("AWAITING HUMAN VERIFIER", true);
+        print("BAY 04 LINK OPEN");
+        print("AWAITING HUMAN VERIFIER");
         showQuestion();
     }
 
@@ -603,15 +607,16 @@ public class ScenePanel extends JPanel implements GameScreen {
         countdownTimer.start();
     }
 
-    private void finishSession() {
+    private SessionResult finishSession() {
         if (speechService != null) speechService.cancel();
         if (countdownTimer != null) {
             countdownTimer.stop();
         }
         try {
-            engine.endSession();
+            return engine.endSession();
         } catch (java.io.UncheckedIOException e) {
             JOptionPane.showMessageDialog(this, e.getMessage(), "Training record error", JOptionPane.ERROR_MESSAGE);
+            return null;
         }
     }
 
@@ -646,13 +651,13 @@ public class ScenePanel extends JPanel implements GameScreen {
                     keyButtons[i].setEnabled(false);
                 }
             }
-            print("BINARY CHOICE: TWO WRONG UNITS PURGED", true);
+            print("BINARY CHOICE: TWO WRONG UNITS PURGED");
         } else {
             predictedChoiceId = result.getPredictedChoiceId();
             predictedConfidence = result.getConfidencePercent();
             int position = positionOfChoiceId(predictedChoiceId);
             String letter = position >= 0 ? String.valueOf("ABCD".charAt(position)) : "?";
-            print("PREDICT: AI SUGGESTS " + letter + " AT " + predictedConfidence + "%", true);
+            print("PREDICT: AI SUGGESTS " + letter + " AT " + predictedConfidence + "%");
         }
         refreshLifelines();
         repaint();
@@ -682,15 +687,16 @@ public class ScenePanel extends JPanel implements GameScreen {
         }
         switchButton.setEnabled(false);
         switchButton.turned = true;
-        finishSession();
         markerLatched = !markerFailed;
         waitingForAnswer = false;
         if (idleTimer != null) {
             idleTimer.stop();
         }
         monitorState = MonitorState.CLOSED;
-        print("BUNDLE WRITTEN TO TAPE", true);
-        print("LINK CLOSED", true);
+        SessionResult record = finishSession();
+        print(record == null ? "RECORD WRITE FAILED" :
+                "BUNDLE WRITTEN TO TAPE / " + record.getFinalScore() + " UNITS", record != null);
+        print("LINK CLOSED");
         nextButton.setText("BACK TO MENU");
         nextButton.setEnabled(true);
         repaint();
@@ -721,7 +727,7 @@ public class ScenePanel extends JPanel implements GameScreen {
         if (result.isRetry()) {
             // Override absorbed the miss. The engine keeps the same question and
             // local ladder state; re-arm only the answer keys for the retry.
-            print("OVERRIDE ENGAGED: RETRY AUTHORIZED", true);
+            print("OVERRIDE ENGAGED: RETRY AUTHORIZED");
             for (JButton keyButton : keyButtons) {
                 keyButton.setEnabled(true);
                 keyButton.setBackground(BRASS_LIT);
@@ -761,8 +767,9 @@ public class ScenePanel extends JPanel implements GameScreen {
             animateMarkerTo(Math.min(questionIndex, TOTAL_QUESTIONS - 1));
             monitorState = MonitorState.HAPPY;
         } else {
-            print("P" + questionIndex + " REJECTED", false);
+            print("P" + questionIndex + " REJECTED / ANSWER " + "ABCD".charAt(position), false);
             print("UNCOMMITTED UNITS DISCARDED", false);
+            print("ROLLBACK TO " + result.getRunningTotal() + " SECURED", false);
             markerFailed = true;
             animateMarkerTo(answeredRung);
             scheduleMarkerRollback(answeredRung);
@@ -773,11 +780,12 @@ public class ScenePanel extends JPanel implements GameScreen {
         }
 
         if (sessionOver) {
-            finishSession();
+            SessionResult record = finishSession();
             if (result.isCorrect()) {
                 startWinSequence();
             } else {
                 print("RESTORATION FAILED", false);
+                if (record != null) print("FAIL RECORD FILED / " + record.getFinalScore() + " UNITS");
             }
             for (JButton lifelineButton : lifelineButtons) {
                 lifelineButton.setEnabled(false);
@@ -830,25 +838,27 @@ public class ScenePanel extends JPanel implements GameScreen {
         endingTimer.start();
     }
 
-    private void print(String text, boolean good) {
+    private void print(String text) {
+        print(text, null);
+    }
+
+    private void print(String text, Boolean good) {
         paperLines.add(text);
         paperGood.add(good);
-        // generous ceiling against unbounded growth, not a visual-capacity cap --
-        // paintPaper() decides how many lines actually show
-        while (paperLines.size() > 200) {
+        paperLineTimes.add(System.currentTimeMillis());
+        while (paperLines.size() > 9) {
             paperLines.remove(0);
             paperGood.remove(0);
+            paperLineTimes.remove(0);
         }
 
         if (paperFeedTimer != null) {
             paperFeedTimer.stop();
         }
-        paperFeedT = 0;
-        long feedStart = System.currentTimeMillis();
         paperFeedTimer = new Timer(16, e -> {
-            paperFeedT = Math.min(1, (System.currentTimeMillis() - feedStart) / (double) PAPER_FEED_MS);
             repaint();
-            if (paperFeedT >= 1) {
+            long now = System.currentTimeMillis();
+            if (paperLineTimes.stream().noneMatch(time -> now - time < PAPER_FEED_MS)) {
                 paperFeedTimer.stop();
             }
         });
@@ -956,12 +966,21 @@ public class ScenePanel extends JPanel implements GameScreen {
             g2.fillPolygon(taperedPolygon(LIFELINE_X[i] - 4, LIFELINE_Y - 4, LIFELINE_W[i] + 8, LIFELINE_H + 8));
         }
 
-        g2.setColor(BRASS_OX);
-        g2.fillPolygon(taperedPolygon(TELETYPE_X, TELETYPE_Y, TELETYPE_W, TELETYPE_H));
+        Polygon teletype = taperedPolygon(TELETYPE_X, TELETYPE_Y, TELETYPE_W, TELETYPE_H);
+        g2.setPaint(new GradientPaint(0, (float) TELETYPE_Y, Color.decode("#58625e"),
+                0, (float) (TELETYPE_Y + TELETYPE_H), Color.decode("#2f3734")));
+        g2.fillPolygon(teletype);
+        g2.setColor(Color.decode("#171c1a"));
+        g2.setStroke(new BasicStroke(4));
+        g2.drawPolygon(teletype);
         paintPaper(g2);
-        g2.setColor(CHALK);
-        g2.setFont(FONT_LADDER);
-        g2.drawString("RECORD", (int) (TELETYPE_X + TELETYPE_W / 2 - 20), (int) (TELETYPE_Y + TELETYPE_H - 6));
+        g2.setColor(Color.decode("#0b0e0d"));
+        g2.fillRoundRect((int) (TELETYPE_X + 14), (int) (TELETYPE_Y - 2), (int) TELETYPE_W - 28, 8, 5, 5);
+        g2.setColor(Color.decode("#c3cec8"));
+        g2.setFont(new Font(Font.MONOSPACED, Font.BOLD, 12));
+        String recordLabel = "R E C O R D";
+        g2.drawString(recordLabel, (int) (TELETYPE_X + (TELETYPE_W - g2.getFontMetrics().stringWidth(recordLabel)) / 2),
+                (int) (TELETYPE_Y + TELETYPE_H - 8));
 
         // monitor/log/card are siblings of .desk, not children -- plain 2d rotations
         // around their own centers, unrelated to the taper field above
@@ -1493,20 +1512,44 @@ public class ScenePanel extends JPanel implements GameScreen {
         return lines;
     }
 
-    // the printed strip feeds up out of the housing's top edge into its own taller
-    // zone above it (mockup's .paper), not inside the compact housing itself
     private void paintPaper(Graphics2D g2) {
+        double paperX = TELETYPE_X + TELETYPE_W * 0.04;
+        double paperW = TELETYPE_W * 0.92;
+        double paperY = TELETYPE_Y - PAPER_H;
+        Shape oldClip = g2.getClip();
+        g2.clip(taperedPolygon(paperX, paperY, paperW, PAPER_H + 2));
+        g2.setPaint(new GradientPaint(0, (float) paperY, new Color(217, 202, 159, 0),
+                0, (float) (paperY + 36), Color.decode("#e6d8b1")));
+        g2.fillRect((int) paperX, (int) paperY, (int) paperW, (int) PAPER_H + 2);
+
+        g2.setColor(new Color(177, 157, 108, 180));
+        g2.drawLine((int) paperX, (int) paperY, (int) paperX, (int) TELETYPE_Y);
+        g2.drawLine((int) (paperX + paperW), (int) paperY,
+                (int) (paperX + paperW), (int) TELETYPE_Y);
+
         g2.setFont(FONT_PAPER);
-        int maxVisible = (int) (PAPER_H / LINE_HEIGHT);
+        FontMetrics metrics = g2.getFontMetrics();
+        int textWidth = (int) paperW - 16;
+        int maxVisible = (int) (PAPER_H / PAPER_LINE_HEIGHT);
         int y = (int) TELETYPE_Y - 8;
         int shown = 0;
-        for (int i = paperLines.size() - 1; i >= 0 && shown < maxVisible; i--, shown++) {
-            // the newest line slides up into place instead of just appearing
-            double slide = shown == 0 ? (1 - paperFeedT) * LINE_HEIGHT : 0;
-            g2.setColor(paperGood.get(i) ? TAPE_GREEN : TAPE_RED);
-            g2.drawString(paperLines.get(i), (int) TELETYPE_X + 10, (int) (y + slide));
-            y -= LINE_HEIGHT;
+        long now = System.currentTimeMillis();
+        for (int i = paperLines.size() - 1; i >= 0 && shown < maxVisible; i--) {
+            List<String> wrapped = wrapText(metrics, paperLines.get(i), textWidth);
+            double progress = Math.min(1, (now - paperLineTimes.get(i)) / (double) PAPER_FEED_MS);
+            float alpha = (float) Math.max(0, progress);
+            g2.setColor(paperGood.get(i) == null ? PAPER_INK :
+                    paperGood.get(i) ? PAPER_GOOD : PAPER_BAD);
+            Composite oldComposite = g2.getComposite();
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+            for (int row = wrapped.size() - 1; row >= 0 && shown < maxVisible; row--, shown++) {
+                double slide = (1 - progress) * PAPER_LINE_HEIGHT;
+                g2.drawString(wrapped.get(row), (int) paperX + 8,
+                        (int) (y - shown * PAPER_LINE_HEIGHT + slide));
+            }
+            g2.setComposite(oldComposite);
         }
+        g2.setClip(oldClip);
     }
 
     // a desk-row control (key/next/lifeline) whose swing bounds are the tapered
