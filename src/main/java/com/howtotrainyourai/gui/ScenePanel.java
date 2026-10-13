@@ -373,13 +373,7 @@ public class ScenePanel extends JPanel implements GameScreen {
         nextButton.addActionListener(e -> {
             playControlSound();
             if (sessionOver) {
-                SessionResult record = finishSession();
-                if (endingPanel != null && record != null) {
-                    endingPanel.show(record, capabilitiesRestored);
-                    cardPanel.showScreen(CardPanel.ENDING);
-                } else {
-                    cardPanel.showScreen(CardPanel.MENU);
-                }
+                showEnding(finishSession());
             } else {
                 showQuestion();
             }
@@ -403,13 +397,7 @@ public class ScenePanel extends JPanel implements GameScreen {
         backButton.addActionListener(e -> {
             playControlSound();
             // Return: ends the session, then shows the summary of what was filed
-            SessionResult record = engine != null ? finishSession() : null;
-            if (endingPanel != null && record != null) {
-                endingPanel.show(record, capabilitiesRestored);
-                cardPanel.showScreen(CardPanel.ENDING);
-            } else {
-                cardPanel.showScreen(CardPanel.MENU);
-            }
+            showEnding(engine != null ? finishSession() : null);
         });
         add(backButton);
 
@@ -631,6 +619,21 @@ public class ScenePanel extends JPanel implements GameScreen {
         countdownTimer.start();
     }
 
+    // Leaves the lab for the summary screen (or the menu if there is nothing to show).
+    // The win sequence is stopped first so its lamps and sounds don't keep playing
+    // over the next screen.
+    private void showEnding(SessionResult record) {
+        if (endingTimer != null) {
+            endingTimer.stop();
+        }
+        if (endingPanel != null && record != null) {
+            endingPanel.show(record, capabilitiesRestored);
+            cardPanel.showScreen(CardPanel.ENDING);
+        } else {
+            cardPanel.showScreen(CardPanel.MENU);
+        }
+    }
+
     private SessionResult finishSession() {
         if (speechService != null) speechService.cancel();
         if (countdownTimer != null) {
@@ -640,7 +643,9 @@ public class ScenePanel extends JPanel implements GameScreen {
             return engine.endSession();
         } catch (java.io.UncheckedIOException e) {
             JOptionPane.showMessageDialog(this, e.getMessage(), "Training record error", JOptionPane.ERROR_MESSAGE);
-            return null;
+            // the engine keeps the result even when the write failed, so a second
+            // call returns it without trying to write again
+            return engine.endSession();
         }
     }
 
