@@ -859,6 +859,7 @@ public class ScenePanel extends JPanel implements GameScreen {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g.create();
+        paintRoomBackdrop(g2);
         g2.translate(offsetX, offsetY);
         g2.scale(scale, scale);
 
@@ -975,6 +976,32 @@ public class ScenePanel extends JPanel implements GameScreen {
         });
 
         g2.dispose();
+    }
+
+    private void paintRoomBackdrop(Graphics2D g2) {
+        g2.setColor(TILE);
+        g2.fillRect(0, 0, getWidth(), getHeight());
+
+        g2.setColor(new Color(57, 77, 72, 90));
+        int firstX = (int) Math.floor(-offsetX / scale / 94) * 94;
+        int lastX = (int) Math.ceil((getWidth() - offsetX) / scale / 94) * 94;
+        for (int x = firstX; x <= lastX; x += 94) {
+            int screenX = (int) Math.round(offsetX + x * scale);
+            g2.fillRect(screenX, 0, Math.max(1, (int) Math.round(2 * scale)), getHeight());
+        }
+
+        int firstY = (int) Math.floor(-offsetY / scale / 62) * 62;
+        int lastY = (int) Math.ceil((getHeight() - offsetY) / scale / 62) * 62;
+        for (int y = firstY; y <= lastY; y += 62) {
+            int screenY = (int) Math.round(offsetY + y * scale);
+            g2.fillRect(0, screenY, getWidth(), Math.max(1, (int) Math.round(2 * scale)));
+        }
+
+        int canvasBottom = (int) Math.round(offsetY + LOGICAL_H * scale);
+        if (canvasBottom < getHeight()) {
+            g2.setColor(WOOD_DARK);
+            g2.fillRect(0, canvasBottom, getWidth(), getHeight() - canvasBottom);
+        }
     }
 
     private void paintTexture(Graphics2D g2, Shape clip, double x, double y, double w, double h,

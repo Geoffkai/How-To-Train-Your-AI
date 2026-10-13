@@ -71,10 +71,12 @@ public class Main {
             }
         });
 
-        frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
-        frame.setMinimumSize(new Dimension(800, 600));
-        frame.setResizable(false);
-        frame.setUndecorated(true);
+        Rectangle usableScreen = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
+        frame.setMinimumSize(new Dimension(Math.min(960, usableScreen.width), Math.min(600, usableScreen.height)));
+        double initialScale = Math.min(1, Math.min(usableScreen.width / 1280.0, usableScreen.height / 800.0));
+        frame.setSize((int) (1280 * initialScale), (int) (800 * initialScale));
+        frame.setResizable(true);
+        frame.setLocationRelativeTo(null);
         frame.setVisible(true);
 
         // Boot directly into the splash screen
