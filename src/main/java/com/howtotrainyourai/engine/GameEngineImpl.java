@@ -205,10 +205,8 @@ public class GameEngineImpl implements GameEngine {
             endReason = "RETURN";
         }
         isRunning = false;
-        String recordedCapability = protocol == Protocol.HIGH_RISK && "FAIL".equals(endReason)
-                ? "None"
-                : highestCapability;
-        SessionResult result = new SessionResult(trainerName, tokenTotal, recordedCapability, protocol, endReason);
+        // verified capabilities stay stable on failure under both protocols
+        SessionResult result = new SessionResult(trainerName, tokenTotal, highestCapability, protocol, endReason);
         try {
             RecordsStore.append(result);
         } catch (IOException e) {

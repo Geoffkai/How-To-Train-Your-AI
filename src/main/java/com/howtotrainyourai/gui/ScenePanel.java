@@ -281,6 +281,10 @@ public class ScenePanel extends JPanel implements GameScreen {
     // index of the key that was pressed to answer the current question, -1 if none
     private int selectedKeyIndex = -1;
     private final boolean[] lampsOn = new boolean[CAPABILITY_NAMES.length];
+    // capabilities actually restored this session -- unlike lampsOn, never cleared by
+    // a High Risk failure or replayed by the win sequence
+    private final boolean[] capabilitiesRestored = new boolean[CAPABILITY_NAMES.length];
+    private EndingPanel endingPanel;
 
     // ai vitals monitor state, see paintMonitor()/tickMonitor()
     private MonitorState monitorState = MonitorState.LISTENING;
@@ -369,8 +373,13 @@ public class ScenePanel extends JPanel implements GameScreen {
         nextButton.addActionListener(e -> {
             playControlSound();
             if (sessionOver) {
-                finishSession();
-                cardPanel.showScreen(CardPanel.MENU);
+                SessionResult record = finishSession();
+                if (endingPanel != null && record != null) {
+                    endingPanel.show(record, capabilitiesRestored);
+                    cardPanel.showScreen(CardPanel.ENDING);
+                } else {
+                    cardPanel.showScreen(CardPanel.MENU);
+                }
             } else {
                 showQuestion();
             }
@@ -393,10 +402,14 @@ public class ScenePanel extends JPanel implements GameScreen {
         });
         backButton.addActionListener(e -> {
             playControlSound();
-            if (engine != null) {
-                finishSession();
+            // Return: ends the session, then shows the summary of what was filed
+            SessionResult record = engine != null ? finishSession() : null;
+            if (endingPanel != null && record != null) {
+                endingPanel.show(record, capabilitiesRestored);
+                cardPanel.showScreen(CardPanel.ENDING);
+            } else {
+                cardPanel.showScreen(CardPanel.MENU);
             }
-            cardPanel.showScreen(CardPanel.MENU);
         });
         add(backButton);
 
@@ -438,6 +451,11 @@ public class ScenePanel extends JPanel implements GameScreen {
         monitorTimer.start();
         heartRateTimer = new Timer(HEART_RATE_TICK_MS, e -> tickHeartRate());
         heartRateTimer.start();
+    }
+
+    /** Where NEXT PROBE / BACK TO MENU goes once a session is over. */
+    public void setEndingPanel(EndingPanel endingPanel) {
+        this.endingPanel = endingPanel;
     }
 
     private JButton flatButton(String text, Font font, Color background, Color foreground) {
@@ -521,6 +539,7 @@ public class ScenePanel extends JPanel implements GameScreen {
         markerLatched = false;
         switchButton.turned = false;
         java.util.Arrays.fill(lampsOn, false);
+        java.util.Arrays.fill(capabilitiesRestored, false);
         if (idleTimer != null) {
             idleTimer.stop();
         }
@@ -534,8 +553,13 @@ public class ScenePanel extends JPanel implements GameScreen {
         heartRate = 72;
         faceX = (MONITOR_W - 28) / 2.0 - FACE_W / 2.0;
         faceY = (MONITOR_H - 28) / 2.0 - FACE_H / 2.0;
-        print("BAY 04 LINK OPEN");
-        print("AWAITING HUMAN VERIFIER");
+        // opening state: Memory is corrupted, the other five capabilities are offline
+        print("MEMORY CORRUPTED", false);
+        print("UNDERSTAND OFFLINE");
+        print("APPLICATION OFFLINE");
+        print("ANALYSIS OFFLINE");
+        print("EVALUATION OFFLINE");
+        print("SYNTHESIS OFFLINE");
         showQuestion();
     }
 
@@ -759,6 +783,7 @@ public class ScenePanel extends JPanel implements GameScreen {
                 for (int lampIndex = 0; lampIndex < CAPABILITY_NAMES.length; lampIndex++) {
                     if (CAPABILITY_NAMES[lampIndex].equals(capability)) {
                         lampsOn[lampIndex] = true;
+                        capabilitiesRestored[lampIndex] = true;
                         if (!(result.isGameOver() && result.isCorrect())) playCeilingLightSound();
                     }
                 }
@@ -774,9 +799,6 @@ public class ScenePanel extends JPanel implements GameScreen {
             animateMarkerTo(answeredRung);
             scheduleMarkerRollback(answeredRung);
             monitorState = MonitorState.ALERT;
-            if (sessionOver && engine.getProtocol() == Protocol.HIGH_RISK) {
-                java.util.Arrays.fill(lampsOn, false);
-            }
         }
 
         if (sessionOver) {
