@@ -113,6 +113,7 @@ public class SettingsPanel extends JPanel {
         sfxLabel = createLabel("SFX RELAY:");
         sfxSlider = createSlider(0, 100,
                 audioManager == null ? 70 : Math.round(audioManager.getSfxVolume() * 100));
+        SoundManager.setSfxVolume(sfxSlider.getValue() / 100f);
         add(sfxSlider);
         add(sfxLabel);
         sfxValue = createValueLabel(sfxSlider.getValue() + "%");
@@ -120,6 +121,7 @@ public class SettingsPanel extends JPanel {
             int value = sfxSlider.getValue();
             sfxValue.setText(value + "%");
             if (audioManager != null) audioManager.setSfxVolume(value / 100f);
+            SoundManager.setSfxVolume(value / 100f);
         });
         add(sfxValue);
 

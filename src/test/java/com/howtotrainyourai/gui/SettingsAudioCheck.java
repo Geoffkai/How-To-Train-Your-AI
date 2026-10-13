@@ -40,7 +40,9 @@ public final class SettingsAudioCheck {
                 sliders[1].setValue(31);
                 sliders[2].setValue(67);
                 if (audio.getMusicVolume() != 0.42f || audio.getSfxVolume() != 0.31f
-                        || speech.getVolume() != 0.67f) throw new AssertionError("volume change not applied");
+                        || SoundManager.getSfxVolume() != 0.31f || speech.getVolume() != 0.67f) {
+                    throw new AssertionError("volume change not applied");
+                }
                 speak.doClick();
                 if (speech.isEnabled()) throw new AssertionError("speak toggle not applied");
             });
