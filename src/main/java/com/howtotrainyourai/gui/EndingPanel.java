@@ -62,8 +62,10 @@ public class EndingPanel extends JPanel {
     /**
      * @param result   the finished session, already written to the records file
      * @param restored which of the six capabilities were restored, in stage order
+     * @param filed    false if the Training Records write failed, so the screen
+     *                 doesn't claim the session was filed
      */
-    public void show(SessionResult result, boolean[] restored) {
+    public void show(SessionResult result, boolean[] restored, boolean filed) {
         String outcome = result.getResult();
         boolean win = outcome.equals("WIN");
         boolean fail = outcome.equals("FAIL");
@@ -98,7 +100,11 @@ public class EndingPanel extends JPanel {
         line(html, String.format("%-23s %s", "GAME RESULT:",
                 win ? "RESTORATION COMPLETE" : fail ? "RESTORATION FAILED" : "SESSION RETURNED"), CHALK);
         html.append("<br>");
-        line(html, "Filed in the Training Records.", MUTED);
+        if (filed) {
+            line(html, "Filed in the Training Records.", MUTED);
+        } else {
+            line(html, "NOT FILED: the Training Records could not be written.", RED);
+        }
         bodyLabel.setText(html.append("</html>").toString());
 
         revalidate();

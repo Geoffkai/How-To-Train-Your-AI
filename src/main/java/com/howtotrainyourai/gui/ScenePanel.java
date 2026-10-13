@@ -285,6 +285,8 @@ public class ScenePanel extends JPanel implements GameScreen {
     // a High Risk failure or replayed by the win sequence
     private final boolean[] capabilitiesRestored = new boolean[CAPABILITY_NAMES.length];
     private EndingPanel endingPanel;
+    // set when the Training Records write failed; the result is still shown, just not as filed
+    private boolean recordWriteFailed;
 
     // ai vitals monitor state, see paintMonitor()/tickMonitor()
     private MonitorState monitorState = MonitorState.LISTENING;
@@ -528,6 +530,7 @@ public class ScenePanel extends JPanel implements GameScreen {
         switchButton.turned = false;
         java.util.Arrays.fill(lampsOn, false);
         java.util.Arrays.fill(capabilitiesRestored, false);
+        recordWriteFailed = false;
         if (idleTimer != null) {
             idleTimer.stop();
         }
@@ -627,7 +630,7 @@ public class ScenePanel extends JPanel implements GameScreen {
             endingTimer.stop();
         }
         if (endingPanel != null && record != null) {
-            endingPanel.show(record, capabilitiesRestored);
+            endingPanel.show(record, capabilitiesRestored, !recordWriteFailed);
             cardPanel.showScreen(CardPanel.ENDING);
         } else {
             cardPanel.showScreen(CardPanel.MENU);
@@ -644,7 +647,9 @@ public class ScenePanel extends JPanel implements GameScreen {
         } catch (java.io.UncheckedIOException e) {
             JOptionPane.showMessageDialog(this, e.getMessage(), "Training record error", JOptionPane.ERROR_MESSAGE);
             // the engine keeps the result even when the write failed, so a second
-            // call returns it without trying to write again
+            // call returns it without trying to write again. Remember the failure:
+            // that second call succeeds, so it can't tell us the record wasn't filed.
+            recordWriteFailed = true;
             return engine.endSession();
         }
     }
@@ -723,8 +728,8 @@ public class ScenePanel extends JPanel implements GameScreen {
         }
         monitorState = MonitorState.CLOSED;
         SessionResult record = finishSession();
-        print(record == null ? "RECORD WRITE FAILED" :
-                "BUNDLE WRITTEN TO TAPE / " + record.getFinalScore() + " UNITS", record != null);
+        print(recordWriteFailed || record == null ? "RECORD WRITE FAILED" :
+                "BUNDLE WRITTEN TO TAPE / " + record.getFinalScore() + " UNITS", !recordWriteFailed && record != null);
         print("LINK CLOSED");
         nextButton.setText("BACK TO MENU");
         nextButton.setEnabled(true);
@@ -812,7 +817,11 @@ public class ScenePanel extends JPanel implements GameScreen {
                 startWinSequence();
             } else {
                 print("RESTORATION FAILED", false);
-                if (record != null) print("FAIL RECORD FILED / " + record.getFinalScore() + " UNITS");
+                if (recordWriteFailed) {
+                    print("RECORD WRITE FAILED", false);
+                } else if (record != null) {
+                    print("FAIL RECORD FILED / " + record.getFinalScore() + " UNITS");
+                }
             }
             for (JButton lifelineButton : lifelineButtons) {
                 lifelineButton.setEnabled(false);
