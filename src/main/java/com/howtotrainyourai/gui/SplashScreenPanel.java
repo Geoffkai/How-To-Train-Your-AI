@@ -1,6 +1,7 @@
 package com.howtotrainyourai.gui;
 
 import javax.imageio.ImageIO;
+import javax.sound.sampled.Clip;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -24,7 +25,10 @@ public class SplashScreenPanel extends JPanel {
 
     private int darknessAlpha = 245;
     private boolean powerStabilized = false;
+    private boolean humTriggered = false;
     private int ticks = 0;
+
+    private Clip humClip;
 
     private final List<String> renderedLines = new ArrayList<>();
     private final String[] bootScript = {
@@ -47,7 +51,13 @@ public class SplashScreenPanel extends JPanel {
 
         loadLabImage();
 
-        // Mouse and key listeners removed so the splash screen plays in full without skipping
+        // 1. Preload the steady hum in memory
+        new Thread(() -> {
+            humClip = SoundManager.loadClip("/audio/electrichum.wav");
+        }).start();
+
+        // 2. Prolonged flicker sound (runs ~4.5 seconds)
+        SoundManager.playSound("/audio/flicker.wav", 4500);
 
         sequenceTimer = new Timer(50, e -> updateSequence());
         sequenceTimer.start();
@@ -99,40 +109,50 @@ public class SplashScreenPanel extends JPanel {
     private void updateSequence() {
         ticks++;
 
-        // Extended power surge & flicker sequence (~2.5 seconds)
+        // 1. Kick in electrichum at tick 65 (~3.25s) so it catches before flicker ends
+        if (ticks >= 65 && !humTriggered) {
+            humTriggered = true;
+            SoundManager.playPreloaded(humClip, -1);
+        }
+
+        // 2. Flicker lights sequence (~3.5 seconds)
         if (!powerStabilized) {
-            if (ticks < 12) {
+            if (ticks < 20) {
                 darknessAlpha = random.nextInt(35) + 220;
-            } else if (ticks < 22) {
+            } else if (ticks < 40) {
                 darknessAlpha = (ticks % 3 == 0) ? random.nextInt(40) + 70 : random.nextInt(30) + 210;
-            } else if (ticks < 32) {
+            } else if (ticks < 55) {
                 darknessAlpha = random.nextInt(60) + 110;
-            } else if (ticks < 42) {
+            } else if (ticks < 65) {
                 darknessAlpha = (ticks % 2 == 0) ? random.nextInt(30) + 40 : random.nextInt(60) + 140;
-            } else if (ticks < 50) {
+            } else if (ticks < 70) {
                 darknessAlpha = random.nextInt(30) + 20;
             } else {
                 darknessAlpha = 0;
                 powerStabilized = true;
             }
         } else {
-            // Reveal line-by-line
-            if (ticks % 7 == 0 && scriptIndex < bootScript.length) {
+            // Reveal text lines smoothly (every 5 ticks = 250ms)
+            if (ticks % 5 == 0 && scriptIndex < bootScript.length) {
                 renderedLines.add(bootScript[scriptIndex]);
                 scriptIndex++;
             }
 
-            // Advances to the main menu automatically once finished
-            if (scriptIndex >= bootScript.length && ticks > 145) {
+            // 3. Transition to menu at tick 135 (~6.75s) right as the audio track finishes naturally
+            if (ticks >= 135) {
                 advanceToMenu();
             }
         }
 
         repaint();
     }
-
+    
     private void advanceToMenu() {
         sequenceTimer.stop();
+        if (humClip != null && humClip.isOpen()) {
+            humClip.stop();
+            humClip.close();
+        }
         cardPanel.showScreen(CardPanel.MENU);
     }
 
