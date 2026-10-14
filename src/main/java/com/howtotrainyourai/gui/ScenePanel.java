@@ -281,6 +281,12 @@ public class ScenePanel extends JPanel implements GameScreen {
     // index of the key that was pressed to answer the current question, -1 if none
     private int selectedKeyIndex = -1;
     private final boolean[] lampsOn = new boolean[CAPABILITY_NAMES.length];
+    // capabilities actually restored this session -- unlike lampsOn, never cleared by
+    // a High Risk failure or replayed by the win sequence
+    private final boolean[] capabilitiesRestored = new boolean[CAPABILITY_NAMES.length];
+    private EndingPanel endingPanel;
+    // set when the Training Records write failed; the result is still shown, just not as filed
+    private boolean recordWriteFailed;
 
     // ai vitals monitor state, see paintMonitor()/tickMonitor()
     private MonitorState monitorState = MonitorState.LISTENING;
@@ -369,8 +375,7 @@ public class ScenePanel extends JPanel implements GameScreen {
         nextButton.addActionListener(e -> {
             playControlSound();
             if (sessionOver) {
-                finishSession();
-                cardPanel.showScreen(CardPanel.MENU);
+                showEnding(finishSession());
             } else {
                 showQuestion();
             }
@@ -393,10 +398,8 @@ public class ScenePanel extends JPanel implements GameScreen {
         });
         backButton.addActionListener(e -> {
             playControlSound();
-            if (engine != null) {
-                finishSession();
-            }
-            cardPanel.showScreen(CardPanel.MENU);
+            // Return: ends the session, then shows the summary of what was filed
+            showEnding(engine != null ? finishSession() : null);
         });
         add(backButton);
 
@@ -438,6 +441,11 @@ public class ScenePanel extends JPanel implements GameScreen {
         monitorTimer.start();
         heartRateTimer = new Timer(HEART_RATE_TICK_MS, e -> tickHeartRate());
         heartRateTimer.start();
+    }
+
+    /** Where NEXT PROBE / BACK TO MENU goes once a session is over. */
+    public void setEndingPanel(EndingPanel endingPanel) {
+        this.endingPanel = endingPanel;
     }
 
     private JButton flatButton(String text, Font font, Color background, Color foreground) {
@@ -521,6 +529,8 @@ public class ScenePanel extends JPanel implements GameScreen {
         markerLatched = false;
         switchButton.turned = false;
         java.util.Arrays.fill(lampsOn, false);
+        java.util.Arrays.fill(capabilitiesRestored, false);
+        recordWriteFailed = false;
         if (idleTimer != null) {
             idleTimer.stop();
         }
@@ -534,8 +544,13 @@ public class ScenePanel extends JPanel implements GameScreen {
         heartRate = 72;
         faceX = (MONITOR_W - 28) / 2.0 - FACE_W / 2.0;
         faceY = (MONITOR_H - 28) / 2.0 - FACE_H / 2.0;
-        print("BAY 04 LINK OPEN");
-        print("AWAITING HUMAN VERIFIER");
+        // opening state: Memory is corrupted, the other five capabilities are offline
+        print("MEMORY CORRUPTED", false);
+        print("UNDERSTAND OFFLINE");
+        print("APPLICATION OFFLINE");
+        print("ANALYSIS OFFLINE");
+        print("EVALUATION OFFLINE");
+        print("SYNTHESIS OFFLINE");
         showQuestion();
     }
 
@@ -607,6 +622,21 @@ public class ScenePanel extends JPanel implements GameScreen {
         countdownTimer.start();
     }
 
+    // Leaves the lab for the summary screen (or the menu if there is nothing to show).
+    // The win sequence is stopped first so its lamps and sounds don't keep playing
+    // over the next screen.
+    private void showEnding(SessionResult record) {
+        if (endingTimer != null) {
+            endingTimer.stop();
+        }
+        if (endingPanel != null && record != null) {
+            endingPanel.show(record, capabilitiesRestored, !recordWriteFailed);
+            cardPanel.showScreen(CardPanel.ENDING);
+        } else {
+            cardPanel.showScreen(CardPanel.MENU);
+        }
+    }
+
     private SessionResult finishSession() {
         if (speechService != null) speechService.cancel();
         if (countdownTimer != null) {
@@ -616,7 +646,11 @@ public class ScenePanel extends JPanel implements GameScreen {
             return engine.endSession();
         } catch (java.io.UncheckedIOException e) {
             JOptionPane.showMessageDialog(this, e.getMessage(), "Training record error", JOptionPane.ERROR_MESSAGE);
-            return null;
+            // the engine keeps the result even when the write failed, so a second
+            // call returns it without trying to write again. Remember the failure:
+            // that second call succeeds, so it can't tell us the record wasn't filed.
+            recordWriteFailed = true;
+            return engine.endSession();
         }
     }
 
@@ -694,8 +728,8 @@ public class ScenePanel extends JPanel implements GameScreen {
         }
         monitorState = MonitorState.CLOSED;
         SessionResult record = finishSession();
-        print(record == null ? "RECORD WRITE FAILED" :
-                "BUNDLE WRITTEN TO TAPE / " + record.getFinalScore() + " UNITS", record != null);
+        print(recordWriteFailed || record == null ? "RECORD WRITE FAILED" :
+                "BUNDLE WRITTEN TO TAPE / " + record.getFinalScore() + " UNITS", !recordWriteFailed && record != null);
         print("LINK CLOSED");
         nextButton.setText("BACK TO MENU");
         nextButton.setEnabled(true);
@@ -759,6 +793,7 @@ public class ScenePanel extends JPanel implements GameScreen {
                 for (int lampIndex = 0; lampIndex < CAPABILITY_NAMES.length; lampIndex++) {
                     if (CAPABILITY_NAMES[lampIndex].equals(capability)) {
                         lampsOn[lampIndex] = true;
+                        capabilitiesRestored[lampIndex] = true;
                         if (!(result.isGameOver() && result.isCorrect())) playCeilingLightSound();
                     }
                 }
@@ -774,9 +809,6 @@ public class ScenePanel extends JPanel implements GameScreen {
             animateMarkerTo(answeredRung);
             scheduleMarkerRollback(answeredRung);
             monitorState = MonitorState.ALERT;
-            if (sessionOver && engine.getProtocol() == Protocol.HIGH_RISK) {
-                java.util.Arrays.fill(lampsOn, false);
-            }
         }
 
         if (sessionOver) {
@@ -785,7 +817,11 @@ public class ScenePanel extends JPanel implements GameScreen {
                 startWinSequence();
             } else {
                 print("RESTORATION FAILED", false);
-                if (record != null) print("FAIL RECORD FILED / " + record.getFinalScore() + " UNITS");
+                if (recordWriteFailed) {
+                    print("RECORD WRITE FAILED", false);
+                } else if (record != null) {
+                    print("FAIL RECORD FILED / " + record.getFinalScore() + " UNITS");
+                }
             }
             for (JButton lifelineButton : lifelineButtons) {
                 lifelineButton.setEnabled(false);

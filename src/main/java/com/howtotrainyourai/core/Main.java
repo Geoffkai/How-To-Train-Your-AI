@@ -3,6 +3,7 @@ package com.howtotrainyourai.core;
 import com.howtotrainyourai.engine.AudioManager;
 import com.howtotrainyourai.engine.QuestionSpeechService;
 import com.howtotrainyourai.gui.CardPanel;
+import com.howtotrainyourai.gui.EndingPanel;
 import com.howtotrainyourai.gui.MainMenuPanel;
 import com.howtotrainyourai.gui.ScenePanel;
 import com.howtotrainyourai.gui.SettingsPanel;
@@ -49,6 +50,9 @@ public class Main {
         cardPanel.addScreen(CardPanel.MENU, new MainMenuPanel(cardPanel));
         cardPanel.addScreen(CardPanel.SETUP, new SetupPanel(cardPanel, scenePanel));
         cardPanel.addScreen(CardPanel.PLAY, scenePanel);
+        EndingPanel endingPanel = new EndingPanel(cardPanel);
+        scenePanel.setEndingPanel(endingPanel);
+        cardPanel.addScreen(CardPanel.ENDING, endingPanel);
         cardPanel.addScreen(CardPanel.TUTORIAL, tutorialPanel);
         cardPanel.addScreen(CardPanel.SETTINGS, settingsPanel);
 

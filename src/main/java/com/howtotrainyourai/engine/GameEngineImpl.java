@@ -205,16 +205,16 @@ public class GameEngineImpl implements GameEngine {
             endReason = "RETURN";
         }
         isRunning = false;
-        String recordedCapability = protocol == Protocol.HIGH_RISK && "FAIL".equals(endReason)
-                ? "None"
-                : highestCapability;
-        SessionResult result = new SessionResult(trainerName, tokenTotal, recordedCapability, protocol, endReason);
+        // verified capabilities stay stable on failure under both protocols
+        SessionResult result = new SessionResult(trainerName, tokenTotal, highestCapability, protocol, endReason);
+        // Keep the result before writing: if the write fails the caller still gets
+        // the outcome on a second call, and the session isn't written twice.
+        sessionResult = result;
         try {
             RecordsStore.append(result);
         } catch (IOException e) {
             throw new UncheckedIOException("Could not write training record", e);
         }
-        sessionResult = result;
         return sessionResult;
     }
 
