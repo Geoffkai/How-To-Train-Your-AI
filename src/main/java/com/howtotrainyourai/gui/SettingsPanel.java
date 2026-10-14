@@ -3,28 +3,31 @@ package com.howtotrainyourai.gui;
 import com.howtotrainyourai.engine.AudioManager;
 import com.howtotrainyourai.engine.QuestionSpeechService;
 import com.howtotrainyourai.engine.RecordsStore;
-import java.io.IOException;
-import javax.imageio.ImageIO;
-import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Random;
+import javax.imageio.ImageIO;
+import javax.swing.*;
 
 public class SettingsPanel extends JPanel {
 
-    // 1970s Mainframe Color Palette
+    // 1970s Mainframe Laboratory CRT Color Palette
     private static final Color CHALK_AMBER = new Color(0xF2, 0xEC, 0xD8);
     private static final Color PHOSPHOR_MUTED = new Color(0x7C, 0x7E, 0x5D);
     private static final Color ACTIVE_GOLD = new Color(0xC2, 0xA6, 0x6E);
-    private static final Color CRT_PULSE = new Color(0x4A, 0x9E, 0x6B);
-    private static final Color TERMINAL_PLATE_BG = new Color(0x0C, 0x0A, 0x09, 248);
+    private static final Color CRT_GREEN = new Color(0x55, 0xDE, 0x88);
+    private static final Color TV_CHASSIS_BEZEL = new Color(0x24, 0x20, 0x1A);
+    private static final Color TV_INNER_GLASS = new Color(0x0A, 0x0E, 0x0B, 246);
 
-    private static final Font TITLE_FONT = new Font(Font.MONOSPACED, Font.BOLD, 28);
-    private static final Font SECTION_FONT = new Font(Font.MONOSPACED, Font.BOLD, 18);
-    private static final Font MONO_FONT = new Font(Font.MONOSPACED, Font.BOLD, 15);
-    private static final Font LOG_FONT = new Font(Font.MONOSPACED, Font.BOLD, 13);
+    private static final Font TITLE_FONT = new Font(Font.MONOSPACED, Font.BOLD, 24);
+    private static final Font SECTION_FONT = new Font(Font.MONOSPACED, Font.BOLD, 16);
+    private static final Font MONO_FONT = new Font(Font.MONOSPACED, Font.BOLD, 14);
+    private static final Font SMALL_MONO = new Font(Font.MONOSPACED, Font.BOLD, 12);
+    private static final Font LOG_FONT = new Font(Font.MONOSPACED, Font.BOLD, 12);
 
     private final CardPanel cardPanel;
     private final AudioManager audioManager;
@@ -32,27 +35,29 @@ public class SettingsPanel extends JPanel {
     private BufferedImage backgroundImage;
     private final Random random = new Random();
 
-    // Ambient background flicker & ECG wave timers
+    // Visual FX Timers (Lab room flicker + TV scanline sweep + Oscilloscope wave)
     private final Timer fxTimer;
     private int bgFlickerAlpha = 20;
     private int waveOffset = 0;
+    private int scanlineScroll = 0;
 
     // Controls
     private JSlider musicSlider;
     private JSlider sfxSlider;
     private JSlider speechSlider;
     private JCheckBox speakQuestions;
-    private JLabel musicValue;
-    private JLabel sfxValue;
-    private JLabel speechValue;
     private JLabel musicLabel;
     private JLabel sfxLabel;
     private JLabel speechLabel;
+    private JLabel musicValue;
+    private JLabel sfxValue;
+    private JLabel speechValue;
     private JButton viewRecordsBtn;
     private JButton backBtn;
 
     private List<String[]> records = List.of();
     private String recordsError;
+
     public SettingsPanel(CardPanel cardPanel) {
         this(cardPanel, null, null);
     }
@@ -68,22 +73,23 @@ public class SettingsPanel extends JPanel {
         refreshRecords();
         buildUI();
 
-        // Runs at ~12.5 FPS for a low-frequency analog hum flicker + animated wave
-        fxTimer = new Timer(80, e -> {
-            // Subtle, non-intrusive background brownout flicker
-            bgFlickerAlpha = random.nextInt(35) + 10;
+        // Runs at ~15 FPS: delivers genuine CRT hum and vintage laboratory flickering
+        fxTimer = new Timer(65, e -> {
+            bgFlickerAlpha = random.nextInt(35) + 12;
             waveOffset = (waveOffset + 1) % 40;
+            scanlineScroll = (scanlineScroll + 1) % 8;
             repaint();
         });
         fxTimer.start();
     }
 
     private void loadLabImage() {
-        String[] paths = {
+        String[] attempts = {
             "/images/splashscreen.png",
-            "/images/splashscreen.jpg"
+            "/images/splashscreen.jpg",
+            "/images/menuscreen.png"
         };
-        for (String path : paths) {
+        for (String path : attempts) {
             try (InputStream in = getClass().getResourceAsStream(path)) {
                 if (in != null) {
                     backgroundImage = ImageIO.read(in);
@@ -91,95 +97,97 @@ public class SettingsPanel extends JPanel {
                 }
             } catch (Exception ignored) {}
         }
+
+        String[] folderPaths = {
+            "src/main/resources/images",
+            "bin/images"
+        };
+        for (String folder : folderPaths) {
+            File f = new File(folder, "splashscreen.png");
+            if (f.exists()) {
+                try {
+                    backgroundImage = ImageIO.read(f);
+                    if (backgroundImage != null) return;
+                } catch (Exception ignored) {}
+            }
+        }
     }
 
     private void buildUI() {
         // ==========================================
-        // 1. AUDIO CALIBRATION
+        // 1. AUDIO CALIBRATION CONTROLS
         // ==========================================
         musicLabel = createLabel("MUSIC VOLUME:");
-        musicSlider = createSlider(0, 100,
-                audioManager == null ? 70 : Math.round(audioManager.getMusicVolume() * 100));
-        add(musicSlider);
-        add(musicLabel);
+        musicSlider = createSlider(0, 100, audioManager == null ? 35 : Math.round(audioManager.getMusicVolume() * 100));
         musicValue = createValueLabel(musicSlider.getValue() + "%");
         musicSlider.addChangeListener(e -> {
-            int value = musicSlider.getValue();
-            musicValue.setText(value + "%");
-            if (audioManager != null) audioManager.setMusicVolume(value / 100f);
+            int val = musicSlider.getValue();
+            musicValue.setText(val + "%");
+            if (audioManager != null) audioManager.setMusicVolume(val / 100f);
         });
-        add(musicValue);
 
         sfxLabel = createLabel("SFX RELAY:");
-        sfxSlider = createSlider(0, 100,
-                audioManager == null ? 70 : Math.round(audioManager.getSfxVolume() * 100));
-        SoundManager.setSfxVolume(sfxSlider.getValue() / 100f);
-        add(sfxSlider);
-        add(sfxLabel);
+        sfxSlider = createSlider(0, 100, audioManager == null ? 35 : Math.round(audioManager.getSfxVolume() * 100));
         sfxValue = createValueLabel(sfxSlider.getValue() + "%");
         sfxSlider.addChangeListener(e -> {
-            int value = sfxSlider.getValue();
-            sfxValue.setText(value + "%");
-            if (audioManager != null) audioManager.setSfxVolume(value / 100f);
-            SoundManager.setSfxVolume(value / 100f);
+            int val = sfxSlider.getValue();
+            sfxValue.setText(val + "%");
+            if (audioManager != null) audioManager.setSfxVolume(val / 100f);
+            SoundManager.setSfxVolume(val / 100f);
         });
-        add(sfxValue);
 
         speechLabel = createLabel("SPEECH VOLUME:");
-        speechSlider = createSlider(0, 100,
-                speechService == null ? 100 : Math.round(speechService.getVolume() * 100));
-        add(speechSlider);
-        add(speechLabel);
+        speechSlider = createSlider(0, 100, speechService == null ? 100 : Math.round(speechService.getVolume() * 100));
         speechValue = createValueLabel(speechSlider.getValue() + "%");
         speechSlider.addChangeListener(e -> {
-            int value = speechSlider.getValue();
-            speechValue.setText(value + "%");
-            if (speechService != null) speechService.setVolume(value / 100f);
+            int val = speechSlider.getValue();
+            speechValue.setText(val + "%");
+            if (speechService != null) speechService.setVolume(val / 100f);
         });
-        add(speechValue);
 
-        speakQuestions = new JCheckBox("SPEAK QUESTIONS", speechService == null || speechService.isEnabled());
-        speakQuestions.setFont(MONO_FONT);
+        speakQuestions = new JCheckBox("SPEAK QUESTIONS (TTS READOUT)", speechService == null || speechService.isEnabled());
+        speakQuestions.setFont(SMALL_MONO);
         speakQuestions.setForeground(CHALK_AMBER);
         speakQuestions.setOpaque(false);
         speakQuestions.setFocusPainted(false);
         speakQuestions.addActionListener(e -> {
             if (speechService != null) speechService.setEnabled(speakQuestions.isSelected());
         });
-        add(speakQuestions);
 
         // ==========================================
-        // 2. DATA MANAGEMENT & ARCHIVE
+        // 2. DATA MANAGEMENT (ARCHIVE)
         // ==========================================
         viewRecordsBtn = createButton(">> [ RETRIEVE TRAINING LOGS ]");
-        viewRecordsBtn.setBounds(90, 315, 340, 30);
         viewRecordsBtn.addActionListener(e -> {
             SoundManager.playSound("/audio/flicker.wav", 100);
             refreshRecords();
             JTextArea archive = new JTextArea(formatRecords());
             archive.setEditable(false);
             archive.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
-            archive.setForeground(CHALK_AMBER);
+            archive.setForeground(CRT_GREEN);
             archive.setBackground(new Color(0x08, 0x0E, 0x0A));
             archive.setCaretPosition(0);
             JScrollPane scroll = new JScrollPane(archive);
             scroll.setPreferredSize(new Dimension(620, 320));
-            JOptionPane.showMessageDialog(this, scroll, "RESTORATION TAPE // ARCHIVE",
-                    JOptionPane.PLAIN_MESSAGE);
+            JOptionPane.showMessageDialog(this, scroll, "RESTORATION TAPE // ARCHIVE", JOptionPane.PLAIN_MESSAGE);
             repaint();
         });
-        add(viewRecordsBtn);
 
         // ==========================================
-        // RETURN BUTTON (Cleanly docked)
+        // DOCKED RETURN BUTTON
         // ==========================================
-        backBtn = createButton("< [ BACK TO MAIN MENU ] >");
-        backBtn.setFont(new Font(Font.MONOSPACED, Font.BOLD, 15));
-        backBtn.setBounds(70, 520, 250, 35);
+        backBtn = createButton("<< [ BACK TO MAIN MENU ] >>");
+        backBtn.setFont(MONO_FONT);
         backBtn.addActionListener(e -> {
             SoundManager.playSound("/audio/flicker.wav", 100);
             cardPanel.showScreen(CardPanel.MENU);
         });
+
+        add(musicLabel); add(musicSlider); add(musicValue);
+        add(sfxLabel); add(sfxSlider); add(sfxValue);
+        add(speechLabel); add(speechSlider); add(speechValue);
+        add(speakQuestions);
+        add(viewRecordsBtn);
         add(backBtn);
     }
 
@@ -200,7 +208,7 @@ public class SettingsPanel extends JPanel {
     private JSlider createSlider(int min, int max, int val) {
         JSlider sl = new JSlider(min, max, val);
         sl.setOpaque(false);
-        sl.setForeground(CHALK_AMBER);
+        sl.setForeground(ACTIVE_GOLD);
         sl.setFocusable(false);
         return sl;
     }
@@ -217,9 +225,11 @@ public class SettingsPanel extends JPanel {
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
             public void mouseEntered(java.awt.event.MouseEvent e) {
                 btn.setForeground(CHALK_AMBER);
             }
+            @Override
             public void mouseExited(java.awt.event.MouseEvent e) {
                 btn.setForeground(PHOSPHOR_MUTED);
             }
@@ -234,24 +244,54 @@ public class SettingsPanel extends JPanel {
         int h = getHeight();
         if (w == 0 || h == 0) return;
 
-        int labelX = 90;
-        int labelWidth = 160;
-        int sliderX = 260;
-        int sliderWidth = Math.min(230, Math.max(150, w - 610));
-        int valueX = sliderX + sliderWidth + 15;
-        int rowHeight = 26;
-        int[] rowY = { 150, 182, 214 };
-        JLabel[] labels = { musicLabel, sfxLabel, speechLabel };
-        JSlider[] sliders = { musicSlider, sfxSlider, speechSlider };
-        JLabel[] values = { musicValue, sfxValue, speechValue };
-        for (int i = 0; i < sliders.length; i++) {
-            labels[i].setBounds(labelX, rowY[i], labelWidth, rowHeight);
-            sliders[i].setBounds(sliderX, rowY[i], sliderWidth, rowHeight);
-            values[i].setBounds(valueX, rowY[i], 60, rowHeight);
+        // Maintain 16:9 aspect box dimensions for responsive sizing
+        double targetAspect = 16.0 / 9.0;
+        int drawW = w;
+        int drawH = (int) (w / targetAspect);
+        if (drawH > h) {
+            drawH = h;
+            drawW = (int) (h * targetAspect);
         }
-        speakQuestions.setBounds(labelX, 250, labelWidth + sliderWidth, rowHeight);
-        viewRecordsBtn.setBounds(90, 315, 340, 30);
-        backBtn.setBounds(70, h - 80, 260, 35);
+        int offsetX = (w - drawW) / 2;
+        int offsetY = (h - drawH) / 2;
+
+        // CRT TV Frame Coordinate Bounds
+        int tvX = offsetX + (int) (drawW * 0.05);
+        int tvY = offsetY + (int) (drawH * 0.06);
+        int tvW = (int) (drawW * 0.90);
+        int tvH = (int) (drawH * 0.88);
+
+        // Column 1: Audio calibration controls
+        int col1X = tvX + (int) (tvW * 0.06);
+        int labelWidth = 140;
+        int sliderWidth = (int) (tvW * 0.28);
+        int sliderX = col1X + labelWidth + 10;
+        int valueX = sliderX + sliderWidth + 12;
+        int rowHeight = 28;
+
+        int row1Y = tvY + (int) (tvH * 0.22);
+        int rowGap = (int) (tvH * 0.060);
+
+        musicLabel.setBounds(col1X, row1Y, labelWidth, rowHeight);
+        musicSlider.setBounds(sliderX, row1Y, sliderWidth, rowHeight);
+        musicValue.setBounds(valueX, row1Y, 60, rowHeight);
+
+        sfxLabel.setBounds(col1X, row1Y + rowGap, labelWidth, rowHeight);
+        sfxSlider.setBounds(sliderX, row1Y + rowGap, sliderWidth, rowHeight);
+        sfxValue.setBounds(valueX, row1Y + rowGap, 60, rowHeight);
+
+        speechLabel.setBounds(col1X, row1Y + (rowGap * 2), labelWidth, rowHeight);
+        speechSlider.setBounds(sliderX, row1Y + (rowGap * 2), sliderWidth, rowHeight);
+        speechValue.setBounds(valueX, row1Y + (rowGap * 2), 60, rowHeight);
+
+        speakQuestions.setBounds(col1X, row1Y + (int) (rowGap * 3.1), labelWidth + sliderWidth, rowHeight);
+
+        // Section 2: Data Management button positioned cleanly below the header
+        int dataSectionHeaderY = tvY + (int) (tvH * 0.50);
+        viewRecordsBtn.setBounds(col1X, dataSectionHeaderY + 22, 330, 32);
+
+        // Return button: docked inside the bottom of the TV frame
+        backBtn.setBounds(col1X, tvY + tvH - (int) (tvH * 0.10), 320, 36);
     }
 
     public void shutdown() {
@@ -269,90 +309,147 @@ public class SettingsPanel extends JPanel {
         int w = getWidth();
         int h = getHeight();
 
-        // 1. Draw Lab Room Background
+        // 1. Render Scaled Laboratory Background
+        double targetAspect = 16.0 / 9.0;
+        int drawW = w;
+        int drawH = (int) (w / targetAspect);
+        if (drawH > h) {
+            drawH = h;
+            drawW = (int) (h * targetAspect);
+        }
+        int offsetX = (w - drawW) / 2;
+        int offsetY = (h - drawH) / 2;
+
+        g2.setColor(new Color(0x06, 0x05, 0x04));
+        g2.fillRect(0, 0, w, h);
+
         if (backgroundImage != null) {
-            g2.drawImage(backgroundImage, 0, 0, w, h, this);
+            g2.drawImage(backgroundImage, offsetX, offsetY, drawW, drawH, this);
         }
 
-        // 2. Background Power Flicker Layer (Atmospheric room flicker)
+        // 2. Power Brownout Layer (Subtle lab room lighting flicker)
         if (bgFlickerAlpha > 0) {
             g2.setColor(new Color(0, 0, 0, Math.min(255, bgFlickerAlpha)));
             g2.fillRect(0, 0, w, h);
         }
 
-        // 3. Central Console Terminal Frame
-        int frameX = 50;
-        int frameY = 40;
-        int frameW = w - 100;
-        int frameH = h - 80;
+        // 3. Render Large Television CRT Monitor Chassis & Glass
+        int tvX = offsetX + (int) (drawW * 0.05);
+        int tvY = offsetY + (int) (drawH * 0.06);
+        int tvW = (int) (drawW * 0.90);
+        int tvH = (int) (drawH * 0.88);
 
-        // Solid readable terminal backplate
-        g2.setColor(TERMINAL_PLATE_BG);
-        g2.fillRect(frameX, frameY, frameW, frameH);
+        // Outer chassis bezel
+        g2.setColor(TV_CHASSIS_BEZEL);
+        g2.fillRoundRect(tvX - 6, tvY - 6, tvW + 12, tvH + 12, 34, 34);
 
-        // Frame double border
-        g2.setColor(CHALK_AMBER);
-        g2.setStroke(new BasicStroke(2));
-        g2.drawRect(frameX, frameY, frameW, frameH);
-        g2.drawRect(frameX + 4, frameY + 4, frameW - 8, frameH - 8);
+        // Inner curved dark terminal glass
+        g2.setColor(TV_INNER_GLASS);
+        g2.fillRoundRect(tvX, tvY, tvW, tvH, 26, 26);
 
-        // Header Title
+        // Dual brass border frame
+        g2.setColor(ACTIVE_GOLD);
+        g2.setStroke(new BasicStroke(2.2f));
+        g2.drawRoundRect(tvX, tvY, tvW, tvH, 26, 26);
+        g2.setColor(new Color(0x60, 0x4D, 0x2C, 160));
+        g2.drawRoundRect(tvX + 5, tvY + 5, tvW - 10, tvH - 10, 22, 22);
+
+        // Horizontal scanlines on the TV glass
+        g2.setColor(new Color(0, 0, 0, 30));
+        for (int y = tvY + 6; y < tvY + tvH - 6; y += 4) {
+            if ((y + scanlineScroll) % 8 == 0) {
+                g2.drawLine(tvX + 6, y, tvX + tvW - 6, y);
+            }
+        }
+
+        // TV Header Banner
         g2.setFont(TITLE_FONT);
+        g2.setColor(CHALK_AMBER);
         FontMetrics fm = g2.getFontMetrics();
-        g2.drawString("MAINFRAME CONFIGURATION", (w - fm.stringWidth("MAINFRAME CONFIGURATION")) / 2, frameY + 50);
+        String title = "MAINFRAME CONFIGURATION // CONSOLE 01";
+        g2.drawString(title, tvX + (tvW - fm.stringWidth(title)) / 2, tvY + (int) (tvH * 0.10));
+
+        // Thin divider line under header
+        g2.setColor(PHOSPHOR_MUTED);
+        g2.drawLine(tvX + 40, tvY + (int) (tvH * 0.125), tvX + tvW - 40, tvY + (int) (tvH * 0.125));
 
         // Section Headers
         g2.setFont(SECTION_FONT);
-        g2.drawString("1. AUDIO CALIBRATION", frameX + 40, frameY + 95);
-        g2.drawString("2. DATA MANAGEMENT", frameX + 40, frameY + 250);
+        g2.setColor(ACTIVE_GOLD);
+        int col1X = tvX + (int) (tvW * 0.06);
+        g2.drawString("1. AUDIO CALIBRATION", col1X, tvY + (int) (tvH * 0.19));
+        g2.drawString("2. DATA MANAGEMENT", col1X, tvY + (int) (tvH * 0.50));
 
-        // Log archive data box
-        int boxX = frameX + 40;
-        int boxY = frameY + 315;
-        g2.setColor(new Color(0x15, 0x13, 0x11));
-        g2.fillRect(boxX, boxY, 390, 80);
+        // Archive summary box
+        int boxX = col1X;
+        int boxY = tvY + (int) (tvH * 0.61);
+        int boxW = (int) (tvW * 0.42);
+        int boxH = (int) (tvH * 0.19);
+
+        g2.setColor(new Color(0x06, 0x0E, 0x08, 220));
+        g2.fillRect(boxX, boxY, boxW, boxH);
         g2.setColor(PHOSPHOR_MUTED);
-        g2.setStroke(new BasicStroke(1));
-        g2.drawRect(boxX, boxY, 390, 80);
+        g2.setStroke(new BasicStroke(1.2f));
+        g2.drawRect(boxX, boxY, boxW, boxH);
 
         g2.setFont(LOG_FONT);
         g2.setColor(ACTIVE_GOLD);
         String[] recordSummary = getBestRecord();
         g2.drawString(recordsError != null ? "ARCHIVE : READ ERROR" : recordSummary == null ? "ARCHIVE : NO TRAINING RECORDS" :
-                "PEAK SCORE : " + recordSummary[1] + " TOKENS", boxX + 15, boxY + 25);
+                "PEAK SCORE : " + recordSummary[1] + " TOKENS", boxX + 16, boxY + 24);
         g2.drawString(recordsError != null ? "OPERATOR   : --" : recordSummary == null ? "OPERATOR   : --" :
-                "OPERATOR   : " + fit(recordSummary[0], 23), boxX + 15, boxY + 45);
+                "OPERATOR   : " + fit(recordSummary[0], 20), boxX + 16, boxY + 46);
         g2.setColor(CHALK_AMBER);
-        g2.drawString(recordsError != null ? "FACULTY    : CHECK TRAINING TAPE" : recordSummary == null ? "FACULTY    : --" :
-                "FACULTY    : " + fit(recordSummary[2], 23), boxX + 15, boxY + 65);
+        g2.drawString(recordsError != null ? "FACULTY    : CHECK RECORD TAPE" : recordSummary == null ? "FACULTY    : --" :
+                "FACULTY    : " + fit(recordSummary[2], 20), boxX + 16, boxY + 68);
 
-        // 4. Animated CRT ECG Oscilloscope (Bottom-Right)
-        int ecgW = 160;
-        int ecgH = 65;
-        int ecgX = frameX + frameW - ecgW - 25;
-        int ecgY = frameY + frameH - ecgH - 25;
+        // 4. Oscilloscope Display Screen (Docked neatly on the right side of the TV)
+        int oscW = (int) (tvW * 0.35);
+        int oscH = (int) (tvH * 0.28);
+        int oscX = tvX + tvW - oscW - (int) (tvW * 0.06);
+        int oscY = tvY + (int) (tvH * 0.22);
 
-        g2.setColor(new Color(0x08, 0x0E, 0x0A));
-        g2.fillRect(ecgX, ecgY, ecgW, ecgH);
-        g2.setColor(CRT_PULSE);
+        g2.setColor(new Color(0x04, 0x10, 0x07));
+        g2.fillRoundRect(oscX, oscY, oscW, oscH, 14, 14);
+        g2.setColor(CRT_GREEN);
         g2.setStroke(new BasicStroke(1.5f));
-        g2.drawRect(ecgX, ecgY, ecgW, ecgH);
+        g2.drawRoundRect(oscX, oscY, oscW, oscH, 14, 14);
 
-        g2.setFont(new Font(Font.MONOSPACED, Font.BOLD, 10));
-        g2.drawString("AI CORE PULSE", ecgX + 8, ecgY + 14);
+        g2.setFont(SMALL_MONO);
+        g2.drawString("AI CORE PULSE FREQUENCY", oscX + 14, oscY + 22);
 
-        // Animated pulse wave
-        int[] basePattern = {32, 32, 32, 30, 46, 12, 54, 30, 32, 32, 32, 32};
-        int px = ecgX + 10;
-        int py = ecgY + basePattern[(waveOffset) % basePattern.length];
+        // Oscilloscope grid lines
+        g2.setColor(new Color(0x18, 0x38, 0x22));
+        g2.drawLine(oscX + 10, oscY + (oscH / 2), oscX + oscW - 10, oscY + (oscH / 2));
+        g2.drawLine(oscX + (oscW / 2), oscY + 28, oscX + (oscW / 2), oscY + oscH - 10);
 
+        // Animated ECG waveform
+        g2.setColor(CRT_GREEN);
+        g2.setStroke(new BasicStroke(2.2f));
+        int[] basePattern = { 0, 0, 0, -4, 22, -30, 36, -8, 0, 0, 0, 0 };
+        int step = (oscW - 24) / 12;
+        int startPlotX = oscX + 12;
+        int midPlotY = oscY + (oscH / 2);
+
+        int px = startPlotX;
+        int py = midPlotY + basePattern[waveOffset % basePattern.length];
         for (int i = 1; i < 12; i++) {
-            int cx = ecgX + 10 + (i * 12);
-            int cy = ecgY + basePattern[(i + waveOffset) % basePattern.length];
+            int cx = startPlotX + (i * step);
+            int cy = midPlotY + basePattern[(i + waveOffset) % basePattern.length];
             g2.drawLine(px, py, cx, cy);
             px = cx;
             py = cy;
         }
+
+        // 5. Hardware Specification Dossier (Lower right side)
+        int infoX = oscX;
+        int infoY = oscY + oscH + (int) (tvH * 0.06);
+        g2.setFont(SMALL_MONO);
+        g2.setColor(PHOSPHOR_MUTED);
+        g2.drawString("DEPARTMENT OF PHYSICAL SCIENCES & COMPUTING", infoX, infoY);
+        g2.drawString("FACILITY SECTOR : 1974-ALPHA // MAIN TERMINAL", infoX, infoY + 20);
+        g2.drawString("POWER LEVEL     : 120V AC NOMINAL // RELAYS SYNCED", infoX, infoY + 40);
+        g2.drawString("SYSTEM STATUS   : STANDBY // CALIBRATION ENGAGED", infoX, infoY + 60);
 
         g2.dispose();
     }
