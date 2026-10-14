@@ -175,16 +175,14 @@ public class TutorialPanel extends JPanel {
     }
 
     private void buildUI() {
-        // Skip Voiceover Button (Generous width to prevent truncation)
-        skipTransmissionBtn = createRetroButton("[ >> SKIP TRANSMISSION & ENTER MANUAL << ]", WARNING_RED);
+        skipTransmissionBtn = createRetroButton("[ >> SKIP TRANSMISSION & ENTER MANUAL << ]", WARNING_RED, SwingConstants.RIGHT);
         skipTransmissionBtn.addActionListener(e -> {
             SoundManager.playSound("/audio/flicker.wav", 120);
             finishTransmission();
         });
         add(skipTransmissionBtn);
 
-        // Previous Page Button
-        prevBtn = createRetroButton("< [ PREV PAGE ]", MUTED_GRAY);
+        prevBtn = createRetroButton("< [ PREV PAGE ]", MUTED_GRAY, SwingConstants.RIGHT);
         prevBtn.addActionListener(e -> {
             if (currentManualPage > 0) {
                 currentManualPage--;
@@ -195,8 +193,7 @@ public class TutorialPanel extends JPanel {
         });
         add(prevBtn);
 
-        // Next Page Button
-        nextBtn = createRetroButton("[ NEXT PAGE ] >", GOLD_ACCENT);
+        nextBtn = createRetroButton("[ NEXT PAGE ] >", GOLD_ACCENT, SwingConstants.RIGHT);
         nextBtn.addActionListener(e -> {
             if (currentManualPage < manualPages.length - 1) {
                 currentManualPage++;
@@ -207,8 +204,7 @@ public class TutorialPanel extends JPanel {
         });
         add(nextBtn);
 
-        // Back to Menu Button
-        backBtn = createRetroButton("<< [ RETURN TO CONSOLE ]", CHALK_AMBER);
+        backBtn = createRetroButton("<< [ RETURN TO CONSOLE ]", CHALK_AMBER, SwingConstants.LEFT);
         backBtn.addActionListener(e -> {
             stopStoryAudio();
             SoundManager.playSound("/audio/flicker.wav", 100);
@@ -218,13 +214,14 @@ public class TutorialPanel extends JPanel {
     }
 
     private void relayoutButtons() {
-        int w = getWidth() > 0 ? getWidth() : 960;
-        int h = getHeight() > 0 ? getHeight() : 600;
+        int w = getWidth() > 0 ? getWidth() : 1280;
+        int h = getHeight() > 0 ? getHeight() : 720;
 
         int frameX = 50;
+        int frameY = 35;
         int frameW = w - 100;
-        int frameH = h - 90;
-        int btnY = frameH - 10;
+        int frameH = h - 70;
+        int btnY = frameY + frameH - 52;
 
         if (isVoiceoverActive) {
             skipTransmissionBtn.setVisible(true);
@@ -232,17 +229,17 @@ public class TutorialPanel extends JPanel {
             nextBtn.setVisible(false);
             backBtn.setVisible(true);
 
-            backBtn.setBounds(frameX + 30, btnY, 260, 36);
-            skipTransmissionBtn.setBounds(frameX + frameW - 440, btnY, 410, 36);
+            backBtn.setBounds(frameX + 30, btnY, 300, 36);
+            skipTransmissionBtn.setBounds(frameX + frameW - 480, btnY, 450, 36);
         } else {
             skipTransmissionBtn.setVisible(false);
             backBtn.setVisible(true);
             prevBtn.setVisible(currentManualPage > 0);
             nextBtn.setVisible(currentManualPage < manualPages.length - 1);
 
-            backBtn.setBounds(frameX + 30, btnY, 260, 36);
-            prevBtn.setBounds(frameX + frameW - 350, btnY, 160, 36);
-            nextBtn.setBounds(frameX + frameW - 180, btnY, 160, 36);
+            backBtn.setBounds(frameX + 30, btnY, 300, 36);
+            prevBtn.setBounds(frameX + frameW - 450, btnY, 200, 36);
+            nextBtn.setBounds(frameX + frameW - 230, btnY, 200, 36);
         }
     }
 
@@ -252,10 +249,12 @@ public class TutorialPanel extends JPanel {
         relayoutButtons();
     }
 
-    private JButton createRetroButton(String text, Color baseColor) {
+    private JButton createRetroButton(String text, Color baseColor, int alignment) {
         JButton btn = new JButton(text);
         btn.setFont(new Font(Font.MONOSPACED, Font.BOLD, 14));
         btn.setForeground(baseColor);
+        btn.setHorizontalAlignment(alignment);
+        btn.setMargin(new Insets(0, 0, 0, 0)); // Prevents '...' text clipping
         btn.setOpaque(false);
         btn.setContentAreaFilled(false);
         btn.setBorderPainted(false);
@@ -263,9 +262,11 @@ public class TutorialPanel extends JPanel {
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
             public void mouseEntered(java.awt.event.MouseEvent e) {
                 btn.setForeground(Color.WHITE);
             }
+            @Override
             public void mouseExited(java.awt.event.MouseEvent e) {
                 btn.setForeground(baseColor);
             }
@@ -284,9 +285,21 @@ public class TutorialPanel extends JPanel {
         int w = getWidth();
         int h = getHeight();
 
-        // 1. Lab Background
+        // 1. Lab Background (16:9 aspect preserved)
+        g2.setColor(new Color(0x08, 0x07, 0x06));
+        g2.fillRect(0, 0, w, h);
+
         if (backgroundImage != null) {
-            g2.drawImage(backgroundImage, 0, 0, w, h, this);
+            double targetAspect = 16.0 / 9.0;
+            int drawW = w;
+            int drawH = (int) (w / targetAspect);
+            if (drawH > h) {
+                drawH = h;
+                drawW = (int) (h * targetAspect);
+            }
+            int offsetX = (w - drawW) / 2;
+            int offsetY = (h - drawH) / 2;
+            g2.drawImage(backgroundImage, offsetX, offsetY, drawW, drawH, this);
         }
 
         int frameX = 50;
@@ -314,7 +327,6 @@ public class TutorialPanel extends JPanel {
     }
 
     private void renderEmergencyTransmission(Graphics2D g2, int fx, int fy, int fw, int fh) {
-        // Glitch Static Scanlines
         g2.setColor(new Color(255, 60, 60, 15 + (random.nextInt(20))));
         for (int y = fy; y < fy + fh; y += 4) {
             if ((y + glitchTicker) % 8 == 0) {
@@ -322,7 +334,6 @@ public class TutorialPanel extends JPanel {
             }
         }
 
-        // Header Alert
         g2.setFont(new Font(Font.MONOSPACED, Font.BOLD, 22));
         g2.setColor(WARNING_RED);
         g2.drawString("! INCOMING DISTRESS TRANSMISSION [AUDIO PLAYBACK] !", fx + 35, fy + 45);
@@ -331,7 +342,6 @@ public class TutorialPanel extends JPanel {
         g2.setColor(MUTED_GRAY);
         g2.drawString("CHANNEL: 1974-VHF // SIGNAL INTEGRITY: 41% // STATUS: DECRYPTING...", fx + 35, fy + 72);
 
-        // Waveform / Oscilloscope Box
         int waveBoxX = fx + 35;
         int waveBoxY = fy + 95;
         int waveBoxW = fw - 70;
@@ -342,7 +352,6 @@ public class TutorialPanel extends JPanel {
         g2.setColor(WARNING_RED);
         g2.drawRect(waveBoxX, waveBoxY, waveBoxW, waveBoxH);
 
-        // Erratic glitch waveform
         g2.setStroke(new BasicStroke(1.5f));
         int prevPx = waveBoxX + 10;
         int prevPy = waveBoxY + (waveBoxH / 2);
@@ -354,7 +363,6 @@ public class TutorialPanel extends JPanel {
             prevPy = currPy;
         }
 
-        // Emergency Message Dispatch
         int textY = waveBoxY + waveBoxH + 45;
         g2.setFont(new Font(Font.MONOSPACED, Font.BOLD, 15));
         g2.setColor(CHALK_AMBER);
@@ -371,7 +379,6 @@ public class TutorialPanel extends JPanel {
     }
 
     private void renderCleanManualPage(Graphics2D g2, int fx, int fy, int fw, int fh) {
-        // Top Document Ribbon
         g2.setFont(new Font(Font.MONOSPACED, Font.BOLD, 12));
         g2.setColor(MUTED_GRAY);
         g2.drawString("FACILITY MANUAL // UP TACLOBAN AI CORE", fx + 30, fy + 32);
@@ -380,11 +387,9 @@ public class TutorialPanel extends JPanel {
         FontMetrics fm = g2.getFontMetrics();
         g2.drawString(pageTracker, fx + fw - fm.stringWidth(pageTracker) - 30, fy + 32);
 
-        // Thin Divider
         g2.setColor(MUTED_GRAY);
         g2.drawLine(fx + 30, fy + 42, fx + fw - 30, fy + 42);
 
-        // Render Active Page
         String[][] lines = manualPages[currentManualPage];
         int startY = fy + 75;
         int lineHeight = 24;

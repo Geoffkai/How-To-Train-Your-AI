@@ -94,7 +94,12 @@ public class MainMenuPanel extends JPanel {
         button.setBorderPainted(false);
         button.setRolloverEnabled(true);
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.addActionListener(e -> onClick.run());
+
+        // Play the mechanical button click sound before executing the screen transition or dialog
+        button.addActionListener(e -> {
+            SoundManager.playSound("/audio/click.wav", 300);
+            onClick.run();
+        });
 
         button.addMouseListener(new MouseAdapter() {
             @Override

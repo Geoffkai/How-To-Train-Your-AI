@@ -11,7 +11,10 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Random;
 import javax.imageio.ImageIO;
+import javax.sound.sampled.Clip;
 import javax.swing.*;
+import javax.swing.event.AncestorEvent;
+import javax.swing.event.AncestorListener;
 
 public class SettingsPanel extends JPanel {
 
@@ -33,6 +36,7 @@ public class SettingsPanel extends JPanel {
     private final AudioManager audioManager;
     private final QuestionSpeechService speechService;
     private BufferedImage backgroundImage;
+    private Clip humClip;
     private final Random random = new Random();
 
     // Visual FX Timers (Lab room flicker + TV scanline sweep + Oscilloscope wave)
@@ -73,6 +77,24 @@ public class SettingsPanel extends JPanel {
         refreshRecords();
         buildUI();
 
+        // Automatically start/stop the electric hum when entering/leaving Settings
+        addAncestorListener(new AncestorListener() {
+            @Override
+            public void ancestorAdded(AncestorEvent event) {
+                refreshRecords();
+                startHumAudio();
+                repaint();
+            }
+
+            @Override
+            public void ancestorRemoved(AncestorEvent event) {
+                stopHumAudio();
+            }
+
+            @Override
+            public void ancestorMoved(AncestorEvent event) {}
+        });
+
         // Runs at ~15 FPS: delivers genuine CRT hum and vintage laboratory flickering
         fxTimer = new Timer(65, e -> {
             bgFlickerAlpha = random.nextInt(35) + 12;
@@ -81,6 +103,33 @@ public class SettingsPanel extends JPanel {
             repaint();
         });
         fxTimer.start();
+    }
+
+    private void startHumAudio() {
+        new Thread(() -> {
+            try {
+                stopHumAudio();
+                humClip = SoundManager.loadClip("/audio/electrichum.wav");
+                if (humClip != null) {
+                    humClip.loop(Clip.LOOP_CONTINUOUSLY);
+                    humClip.start();
+                }
+            } catch (Exception ignored) {}
+        }).start();
+    }
+
+    private void stopHumAudio() {
+        if (humClip != null) {
+            try {
+                if (humClip.isRunning()) {
+                    humClip.stop();
+                }
+                if (humClip.isOpen()) {
+                    humClip.close();
+                }
+            } catch (Exception ignored) {}
+            humClip = null;
+        }
     }
 
     private void loadLabImage() {
@@ -174,12 +223,12 @@ public class SettingsPanel extends JPanel {
         });
 
         // ==========================================
-        // DOCKED RETURN BUTTON
+        // DOCKED RETURN BUTTON (No click sound on return)
         // ==========================================
         backBtn = createButton("<< [ BACK TO MAIN MENU ] >>");
         backBtn.setFont(MONO_FONT);
         backBtn.addActionListener(e -> {
-            SoundManager.playSound("/audio/flicker.wav", 100);
+            stopHumAudio();
             cardPanel.showScreen(CardPanel.MENU);
         });
 
@@ -217,6 +266,7 @@ public class SettingsPanel extends JPanel {
         JButton btn = new JButton(text);
         btn.setFont(MONO_FONT);
         btn.setForeground(PHOSPHOR_MUTED);
+        btn.setMargin(new Insets(0, 0, 0, 0));
         btn.setOpaque(false);
         btn.setContentAreaFilled(false);
         btn.setBorderPainted(false);
@@ -296,6 +346,7 @@ public class SettingsPanel extends JPanel {
 
     public void shutdown() {
         fxTimer.stop();
+        stopHumAudio();
     }
 
     @Override
