@@ -4,6 +4,8 @@ import com.howtotrainyourai.engine.AudioManager;
 import com.howtotrainyourai.engine.QuestionSpeechService;
 import com.howtotrainyourai.engine.RecordsStore;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -15,6 +17,7 @@ import javax.sound.sampled.Clip;
 import javax.swing.*;
 import javax.swing.event.AncestorEvent;
 import javax.swing.event.AncestorListener;
+import javax.swing.plaf.basic.BasicScrollBarUI;
 
 public class SettingsPanel extends JPanel {
 
@@ -23,6 +26,7 @@ public class SettingsPanel extends JPanel {
     private static final Color PHOSPHOR_MUTED = new Color(0x7C, 0x7E, 0x5D);
     private static final Color ACTIVE_GOLD = new Color(0xC2, 0xA6, 0x6E);
     private static final Color CRT_GREEN = new Color(0x55, 0xDE, 0x88);
+    private static final Color WARNING_RED = new Color(0xE0, 0x5A, 0x4F);
     private static final Color TV_CHASSIS_BEZEL = new Color(0x24, 0x20, 0x1A);
     private static final Color TV_INNER_GLASS = new Color(0x0A, 0x0E, 0x0B, 246);
 
@@ -210,15 +214,7 @@ public class SettingsPanel extends JPanel {
         viewRecordsBtn.addActionListener(e -> {
             SoundManager.playSound("/audio/flicker.wav", 100);
             refreshRecords();
-            JTextArea archive = new JTextArea(formatRecords());
-            archive.setEditable(false);
-            archive.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
-            archive.setForeground(CRT_GREEN);
-            archive.setBackground(new Color(0x08, 0x0E, 0x0A));
-            archive.setCaretPosition(0);
-            JScrollPane scroll = new JScrollPane(archive);
-            scroll.setPreferredSize(new Dimension(620, 320));
-            JOptionPane.showMessageDialog(this, scroll, "RESTORATION TAPE // ARCHIVE", JOptionPane.PLAIN_MESSAGE);
+            showRetroArchiveDialog();
             repaint();
         });
 
@@ -238,6 +234,171 @@ public class SettingsPanel extends JPanel {
         add(speakQuestions);
         add(viewRecordsBtn);
         add(backBtn);
+    }
+
+    /**
+     * Spawns a custom 1974 CRT Magnetic Tape Archive Modal matching the Mainframe Console aesthetic.
+     */
+    private void showRetroArchiveDialog() {
+        Window owner = SwingUtilities.getWindowAncestor(this);
+        JDialog dialog = new JDialog(owner, Dialog.ModalityType.APPLICATION_MODAL);
+        dialog.setUndecorated(true);
+        dialog.setBackground(new Color(0, 0, 0, 0));
+
+        int dialogW = 820;
+        int dialogH = 490;
+        dialog.setSize(dialogW, dialogH);
+        dialog.setLocationRelativeTo(this);
+
+        JPanel root = new JPanel(null) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
+
+                int w = getWidth();
+                int h = getHeight();
+
+                // Outer CRT chassis rim
+                g2.setColor(TV_CHASSIS_BEZEL);
+                g2.fillRoundRect(0, 0, w, h, 28, 28);
+
+                // Inner CRT phosphor glass
+                g2.setColor(new Color(0x08, 0x0C, 0x09, 252));
+                g2.fillRoundRect(6, 6, w - 12, h - 12, 22, 22);
+
+                // Double Brass Border
+                g2.setColor(ACTIVE_GOLD);
+                g2.setStroke(new BasicStroke(2.0f));
+                g2.drawRoundRect(6, 6, w - 12, h - 12, 22, 22);
+                g2.setColor(new Color(0x60, 0x4D, 0x2C, 170));
+                g2.drawRoundRect(11, 11, w - 22, h - 22, 18, 18);
+
+                // CRT Header Banner
+                g2.setFont( new Font(Font.MONOSPACED, Font.BOLD, 19));
+                g2.setColor(CHALK_AMBER);
+                String header = "MAGNETIC TAPE ARCHIVE // RESTORATION BAY LOGS";
+                FontMetrics fm = g2.getFontMetrics();
+                g2.drawString(header, (w - fm.stringWidth(header)) / 2, 42);
+
+                // Subheader metadata
+                g2.setFont(SMALL_MONO);
+                g2.setColor(CRT_GREEN);
+                String meta = String.format("TAPE DRIVE: 01-A  |  TOTAL SESSIONS RECORDED: %d  |  STATUS: MOUNTED", records.size());
+                FontMetrics fmSub = g2.getFontMetrics();
+                g2.drawString(meta, (w - fmSub.stringWidth(meta)) / 2, 64);
+
+                // Divider line
+                g2.setColor(PHOSPHOR_MUTED);
+                g2.drawLine(30, 76, w - 30, 76);
+
+                // Table Column Header Bar
+                int tableX = 30;
+                int tableY = 88;
+                int tableW = w - 60;
+                g2.setColor(new Color(0x14, 0x22, 0x18));
+                g2.fillRect(tableX, tableY, tableW, 28);
+                g2.setColor(ACTIVE_GOLD);
+                g2.drawRect(tableX, tableY, tableW, 28);
+
+                g2.setFont(SMALL_MONO);
+                String colHeader = String.format(" %-4s | %-18s | %-11s | %-15s | %-10s | %-8s",
+                        "LOG#", "OPERATOR ID", "PEAK TOKENS", "COGNITIVE STAGE", "PROTOCOL", "OUTCOME");
+                g2.drawString(colHeader, tableX + 8, tableY + 18);
+
+                // Subtle CRT Scanlines across modal
+                g2.setColor(new Color(0, 0, 0, 28));
+                for (int y = 8; y < h - 8; y += 4) {
+                    g2.drawLine(8, y, w - 8, y);
+                }
+
+                g2.dispose();
+            }
+        };
+        root.setOpaque(false);
+
+        // Build custom row list inside scroll pane
+        JPanel rowsContainer = new JPanel();
+        rowsContainer.setLayout(new BoxLayout(rowsContainer, BoxLayout.Y_AXIS));
+        rowsContainer.setBackground(new Color(0x06, 0x0A, 0x07));
+
+        if (recordsError != null) {
+            rowsContainer.add(createArchiveRowLabel("!! MAGNETIC TAPE READ ERROR: " + recordsError, WARNING_RED, false));
+        } else if (records.isEmpty()) {
+            rowsContainer.add(createArchiveRowLabel("   [ NO TRAINING SESSIONS RECORDED ON MAGNETIC TAPE ]", PHOSPHOR_MUTED, false));
+        } else {
+            int logNum = records.size();
+            for (int i = records.size() - 1; i >= 0; i--) {
+                String[] r = records.get(i);
+                String op = r.length > 0 ? fit(r[0], 18) : "--";
+                String sc = r.length > 1 ? fit(r[1], 6) + " TK" : "0 TK";
+                String fac = r.length > 2 ? fit(r[2], 15) : "None";
+                String mode = r.length > 3 ? fit(r[3], 10) : "STANDARD";
+                String res = r.length > 4 ? fit(r[4], 8) : "--";
+
+                String formattedRow = String.format(" #%03d | %-18s | %-11s | %-15s | %-10s | %-8s",
+                        logNum--, op, sc, fac, mode, res);
+
+                Color rowColor = CHALK_AMBER;
+                if ("WIN".equalsIgnoreCase(res.trim())) {
+                    rowColor = CRT_GREEN;
+                } else if ("FAIL".equalsIgnoreCase(res.trim())) {
+                    rowColor = WARNING_RED;
+                }
+
+                boolean evenRow = (i % 2 == 0);
+                rowsContainer.add(createArchiveRowLabel(formattedRow, rowColor, evenRow));
+            }
+        }
+
+        JScrollPane scrollPane = new JScrollPane(rowsContainer);
+        scrollPane.setBounds(30, 118, dialogW - 60, dialogH - 185);
+        scrollPane.setBorder(BorderFactory.createLineBorder(PHOSPHOR_MUTED, 1));
+        scrollPane.getViewport().setBackground(new Color(0x06, 0x0A, 0x07));
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        scrollPane.getVerticalScrollBar().setUI(new BasicScrollBarUI() {
+            @Override
+            protected void configureScrollBarColors() {
+                this.thumbColor = ACTIVE_GOLD;
+                this.trackColor = new Color(0x0E, 0x15, 0x10);
+            }
+        });
+        root.add(scrollPane);
+
+        // Close / Eject Tape Button
+        JButton closeBtn = createButton("<< [ EJECT TAPE / RETURN TO CONFIGURATION ] >>");
+        closeBtn.setHorizontalAlignment(SwingConstants.CENTER);
+        closeBtn.setForeground(ACTIVE_GOLD);
+        closeBtn.setBounds((dialogW - 440) / 2, dialogH - 52, 440, 34);
+        closeBtn.addActionListener(e -> dialog.dispose());
+        root.add(closeBtn);
+
+        // Allow ESC key to close modal
+        root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "closeArchive");
+        root.getActionMap().put("closeArchive", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dialog.dispose();
+            }
+        });
+
+        dialog.setContentPane(root);
+        dialog.setVisible(true);
+    }
+
+    private JPanel createArchiveRowLabel(String text, Color textColor, boolean alternateBg) {
+        JPanel rowPanel = new JPanel(new BorderLayout());
+        rowPanel.setMaximumSize(new Dimension(760, 28));
+        rowPanel.setPreferredSize(new Dimension(740, 28));
+        rowPanel.setBackground(alternateBg ? new Color(0x0B, 0x13, 0x0E) : new Color(0x06, 0x0A, 0x07));
+
+        JLabel lbl = new JLabel(text);
+        lbl.setFont(new Font(Font.MONOSPACED, Font.BOLD, 12));
+        lbl.setForeground(textColor);
+        lbl.setBorder(BorderFactory.createEmptyBorder(0, 6, 0, 6));
+        rowPanel.add(lbl, BorderLayout.CENTER);
+        return rowPanel;
     }
 
     private JLabel createLabel(String text) {
@@ -528,22 +689,6 @@ public class SettingsPanel extends JPanel {
             } catch (NumberFormatException ignored) {}
         }
         return best;
-    }
-
-    private String formatRecords() {
-        StringBuilder text = new StringBuilder("UP TACLOBAN RESTORATION BAY // SESSION TAPE\n")
-                .append("==============================================================\n");
-        if (recordsError != null) return text.append("TAPE READ ERROR: ").append(recordsError).append('\n').toString();
-        if (records.isEmpty()) return text.append("NO TRAINING RECORDS ON FILE\n").toString();
-        int first = Math.max(0, records.size() - 20);
-        for (int i = records.size() - 1; i >= first; i--) {
-            String[] record = records.get(i);
-            text.append(String.format("%s | %s tokens | %s | %s | %s%n",
-                    fit(record[0], 18), fit(record[1], 5), fit(record[2], 16),
-                    fit(record[3], 9), fit(record[4], 6)));
-        }
-        if (first > 0) text.append("... earlier sessions remain on tape\n");
-        return text.toString();
     }
 
     private static String fit(String value, int width) {
