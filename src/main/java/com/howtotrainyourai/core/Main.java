@@ -17,13 +17,9 @@ import javax.swing.*;
 public class Main {
 
     public static void main(String[] args) {
-        // aqua (macos) ignores custom JButton colors/borders otherwise, every screen's
-        // buttons need this or they render invisible/unstyled on a mac
         try {
             UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
-        } catch (Exception ignored) {
-            // worst case we're back to whatever the platform default is
-        }
+        } catch (Exception ignored) {}
         SwingUtilities.invokeLater(Main::createAndShowGUI);
     }
 
@@ -47,9 +43,6 @@ public class Main {
         // Register all screens
         cardPanel.addScreen(CardPanel.SPLASH, new SplashScreenPanel(cardPanel));
 
-        // ScenePanel first: SetupPanel needs it, because SetupPanel is what starts a
-        // session and hands the live engine over. Nothing here builds an engine --
-        // that happens per session in SetupPanel, via GameEngineFactory.
         ScenePanel scenePanel = new ScenePanel(cardPanel, audioManager, speechService);
         TutorialPanel tutorialPanel = new TutorialPanel(cardPanel);
         SettingsPanel settingsPanel = new SettingsPanel(cardPanel, audioManager, speechService);
@@ -71,11 +64,14 @@ public class Main {
             }
         });
 
-        Rectangle usableScreen = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
-        frame.setMinimumSize(new Dimension(Math.min(960, usableScreen.width), Math.min(600, usableScreen.height)));
-        double initialScale = Math.min(1, Math.min(usableScreen.width / 1280.0, usableScreen.height / 800.0));
-        frame.setSize((int) (1280 * initialScale), (int) (800 * initialScale));
-        frame.setResizable(true);
+        // Strip OS window title bar, borders, and X button
+        frame.setUndecorated(true);
+        frame.setResizable(false);
+
+        // Fill the entire monitor display
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        frame.setSize(screenSize);
+        frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
 
