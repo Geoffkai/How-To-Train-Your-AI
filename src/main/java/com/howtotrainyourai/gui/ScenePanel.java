@@ -267,6 +267,7 @@ public class ScenePanel extends JPanel implements GameScreen {
     private int endingCapabilityIndex;
 
     private GameEngine engine;
+    private int runningTotal;
     private int questionIndex;
     private boolean sessionOver;
     // brass clip that tracks progress on the ladder, see paintLadderMarker()
@@ -508,6 +509,7 @@ public class ScenePanel extends JPanel implements GameScreen {
     public void startGame(GameEngine engine) {
         if (speechService != null) speechService.cancel();
         this.engine = engine;
+        runningTotal = 0;
         this.questionIndex = 0;
         this.sessionOver = false;
         java.util.Arrays.fill(ladderOutcomes, null);
@@ -631,7 +633,7 @@ public class ScenePanel extends JPanel implements GameScreen {
         }
         if (endingPanel != null && record != null) {
             endingPanel.show(record, capabilitiesRestored, !recordWriteFailed);
-            cardPanel.showScreen(CardPanel.ENDING);
+            cardPanel.showScreen(CardPanel.ENDING_COMIC);
         } else {
             cardPanel.showScreen(CardPanel.MENU);
         }
@@ -731,7 +733,7 @@ public class ScenePanel extends JPanel implements GameScreen {
         print(recordWriteFailed || record == null ? "RECORD WRITE FAILED" :
                 "BUNDLE WRITTEN TO TAPE / " + record.getFinalScore() + " UNITS", !recordWriteFailed && record != null);
         print("LINK CLOSED");
-        nextButton.setText("BACK TO MENU");
+        nextButton.setText("VIEW RESULT");
         nextButton.setEnabled(true);
         repaint();
     }
@@ -758,6 +760,7 @@ public class ScenePanel extends JPanel implements GameScreen {
             countdownTimer.stop();
         }
         TurnResult result = engine.submitAnswer(choiceId);
+        runningTotal = result.getRunningTotal();
         if (result.isRetry()) {
             // Override absorbed the miss. The engine keeps the same question and
             // local ladder state; re-arm only the answer keys for the retry.
@@ -822,16 +825,23 @@ public class ScenePanel extends JPanel implements GameScreen {
                 } else if (record != null) {
                     print("FAIL RECORD FILED / " + record.getFinalScore() + " UNITS");
                 }
+                nextButton.setEnabled(false);
+                endingTimer = new Timer(1400, e -> {
+                    endingTimer.stop();
+                    nextButton.setEnabled(true);
+                });
+                endingTimer.setRepeats(false);
+                endingTimer.start();
             }
             for (JButton lifelineButton : lifelineButtons) {
                 lifelineButton.setEnabled(false);
             }
             switchButton.setEnabled(false);
-            nextButton.setText("BACK TO MENU");
+            nextButton.setText("VIEW RESULT");
         } else {
             nextButton.setText("NEXT PROBE");
         }
-        nextButton.setEnabled(true);
+        nextButton.setEnabled(!sessionOver);
         relayout();
     }
 
@@ -851,6 +861,7 @@ public class ScenePanel extends JPanel implements GameScreen {
     }
 
     private void startWinSequence() {
+        nextButton.setEnabled(false);
         java.util.Arrays.fill(lampsOn, false);
         endingCapabilityIndex = 0;
         String[] online = { "MEMORY ONLINE", "UNDERSTANDING ONLINE", "APPLICATION ONLINE",
@@ -867,6 +878,7 @@ public class ScenePanel extends JPanel implements GameScreen {
             } else {
                 print("AI CORE: FULLY ACTIVATED", true);
                 endingTimer.stop();
+                nextButton.setEnabled(true);
             }
             repaint();
         });
@@ -1428,6 +1440,8 @@ public class ScenePanel extends JPanel implements GameScreen {
                 (int) BOARD_X + 24, (int) BOARD_Y + 30);
         g2.drawString("PROBE " + String.format("%02d", displayedIndex + 1) + " / " + TOTAL_QUESTIONS,
                 (int) (BOARD_X + BOARD_W) - 180, (int) BOARD_Y + 30);
+        g2.setColor(CHALK_YELLOW);
+        g2.drawString("TOKENS " + runningTotal, (int) BOARD_X + 24, (int) BOARD_Y + 54);
         if (engine.getProtocol().hasTimer()) {
             g2.setColor(countdownSeconds <= 5 ? TAPE_RED : CHALK_YELLOW);
             g2.drawString("TIME " + countdownSeconds + "s", (int) (BOARD_X + BOARD_W) - 115,

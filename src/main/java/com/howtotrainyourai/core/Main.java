@@ -5,6 +5,7 @@ import com.howtotrainyourai.engine.QuestionSpeechService;
 import com.howtotrainyourai.gui.CardPanel;
 import com.howtotrainyourai.gui.EndingPanel;
 import com.howtotrainyourai.gui.MainMenuPanel;
+import com.howtotrainyourai.gui.IntroPanel;
 import com.howtotrainyourai.gui.ScenePanel;
 import com.howtotrainyourai.gui.SettingsPanel;
 import com.howtotrainyourai.gui.SplashScreenPanel;
@@ -45,10 +46,12 @@ public class Main {
         cardPanel.addScreen(CardPanel.SPLASH, new SplashScreenPanel(cardPanel));
 
         ScenePanel scenePanel = new ScenePanel(cardPanel, audioManager, speechService);
+        IntroPanel introPanel = new IntroPanel(cardPanel, scenePanel);
         TutorialPanel tutorialPanel = new TutorialPanel(cardPanel);
         SettingsPanel settingsPanel = new SettingsPanel(cardPanel, audioManager, speechService);
         cardPanel.addScreen(CardPanel.MENU, new MainMenuPanel(cardPanel));
-        cardPanel.addScreen(CardPanel.SETUP, new SetupPanel(cardPanel, scenePanel));
+        cardPanel.addScreen(CardPanel.SETUP, new SetupPanel(cardPanel, introPanel));
+        cardPanel.addScreen(CardPanel.INTRO, introPanel);
         cardPanel.addScreen(CardPanel.PLAY, scenePanel);
         EndingPanel endingPanel = new EndingPanel(cardPanel);
         scenePanel.setEndingPanel(endingPanel);
