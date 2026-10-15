@@ -4,6 +4,7 @@ bin/
 
 # Log file
 *.log
+TrainingRecords.csv
 
 # BlueJ files
 *.ctxt
@@ -34,4 +35,3 @@ PROJECT_STARTUP_FRAMEWORK.md
 
 # Understand-Anything knowledge graph cache (local dev tool, regenerate with /understand)
 .ua/
-

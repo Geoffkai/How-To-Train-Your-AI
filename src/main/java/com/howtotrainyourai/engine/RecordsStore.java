@@ -7,41 +7,49 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Reads and appends the game's local training-record file.
  *
- * The file lives in the player's %APPDATA%\HowToTrainYourAI folder, so it
- * survives no matter which folder the game is launched from. If APPDATA isn't
- * set (non-Windows machine), it falls back to the user's home directory
- * instead of crashing.
+ * The file lives in the player's per-user application-data folder, independent
+ * of the game's launch directory.
  */
 public final class RecordsStore {
     private static final String FOLDER_NAME = "HowToTrainYourAI";
     private static final String FILE_NAME = "TrainingRecords.csv";
     private static final String HEADER = "trainer|score|highest capability|protocol|result";
-    private static final Path FILE = resolveFile();
-
     private RecordsStore() {}
 
-    private static Path resolveFile() {
-        String appData = System.getenv("APPDATA");
-        Path base = (appData != null && !appData.isBlank())
-                ? Path.of(appData)
-                : Path.of(System.getProperty("user.home"));
+    static Path resolveFile(String osName, String userHome, Map<String, String> env) {
+        Path home = Path.of(userHome);
+        Path base;
+        if (osName.startsWith("Windows")) {
+            String appData = env.get("APPDATA");
+            base = appData != null && !appData.isBlank() ? Path.of(appData) : home.resolve("AppData/Roaming");
+        } else if (osName.startsWith("Mac")) {
+            base = home.resolve("Library/Application Support");
+        } else {
+            String xdg = env.get("XDG_DATA_HOME");
+            base = xdg != null && !xdg.isBlank() ? Path.of(xdg) : home.resolve(".local/share");
+        }
         return base.resolve(FOLDER_NAME).resolve(FILE_NAME);
     }
 
     /** Where the records file is (or will be) stored. Handy for debugging. */
     public static Path location() {
-        return FILE;
+        return resolveFile(System.getProperty("os.name"), System.getProperty("user.home"), System.getenv());
     }
 
     public static void append(SessionResult result) throws IOException {
+        append(location(), result);
+    }
+
+    static void append(Path file, SessionResult result) throws IOException {
         // First write on a fresh machine: the folder doesn't exist yet.
-        Files.createDirectories(FILE.getParent());
-        boolean needsHeader = !Files.exists(FILE) || Files.size(FILE) == 0;
-        try (var writer = Files.newBufferedWriter(FILE, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
+        Files.createDirectories(file.getParent());
+        boolean needsHeader = !Files.exists(file) || Files.size(file) == 0;
+        try (var writer = Files.newBufferedWriter(file, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
             if (needsHeader) {
                 writer.write(HEADER);
                 writer.newLine();
@@ -52,9 +60,13 @@ public final class RecordsStore {
     }
 
     public static List<String[]> readAll() throws IOException {
-        if (!Files.exists(FILE)) return List.of();
+        return readAll(location());
+    }
+
+    static List<String[]> readAll(Path file) throws IOException {
+        if (!Files.exists(file)) return List.of();
         List<String[]> records = new ArrayList<>();
-        List<String> lines = Files.readAllLines(FILE);
+        List<String> lines = Files.readAllLines(file);
         for (int i = 1; i < lines.size(); i++) {
             String[] fields = lines.get(i).split("\\|", -1);
             if (fields.length == 5) records.add(fields);
@@ -71,8 +83,12 @@ public final class RecordsStore {
      * @param limit how many to return at most (e.g. 10 for a top-10 board)
      */
     public static List<String[]> topScores(int limit) throws IOException {
+        return topScores(location(), limit);
+    }
+
+    static List<String[]> topScores(Path file, int limit) throws IOException {
         List<String[]> ranked = new ArrayList<>();
-        for (String[] record : readAll()) {
+        for (String[] record : readAll(file)) {
             try {
                 Integer.parseInt(record[1].trim());
                 ranked.add(record);

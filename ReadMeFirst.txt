@@ -40,6 +40,7 @@ the project root:
 On macOS/Linux, use `mkdir -p dist/lib/freetts`, then run `cp lib/freetts/* dist/lib/freetts/`
 and the same `jar` command. Run the packaged jar offline
 with `java -jar dist/HowToTrainYourAI.jar`. For Launch4j, wrap that jar and
-ship the entire `dist/lib/freetts/` directory beside the executable; keep the
-launcher working directory at the distribution root so the app's CSV records
-remain alongside the run location.
+ship the entire `dist/lib/freetts/` directory beside the executable. Training
+records are stored per user: `%APPDATA%\HowToTrainYourAI` on Windows,
+`~/.local/share/HowToTrainYourAI` on Linux (or `$XDG_DATA_HOME`), and
+`~/Library/Application Support/HowToTrainYourAI` on macOS.
