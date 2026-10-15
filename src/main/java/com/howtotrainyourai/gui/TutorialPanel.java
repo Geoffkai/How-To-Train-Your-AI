@@ -7,6 +7,7 @@ import javax.swing.event.AncestorEvent;
 import javax.swing.event.AncestorListener;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.InputStream;
 import java.util.Random;
 
@@ -18,20 +19,23 @@ public class TutorialPanel extends JPanel {
     private static final Color WARNING_RED = new Color(0xDF, 0x4D, 0x42);
     private static final Color GOLD_ACCENT = new Color(0xD8, 0xB6, 0x68);
     private static final Color MUTED_GRAY = new Color(0x8C, 0x88, 0x7B);
-    private static final Color SOLID_PLATE = new Color(0x0A, 0x09, 0x08, 250);
+    private static final Color SOLID_PLATE = new Color(0x0A, 0x09, 0x08, 244);
 
     private final CardPanel cardPanel;
     private BufferedImage backgroundImage;
     private Clip storyClip;
+    private Clip humClip;
     private final Random random = new Random();
 
     // Two Distinct States
     private boolean isVoiceoverActive = true;
     private int currentManualPage = 0;
 
-    // Visual FX Timers
+    // Visual FX Timers (Lab room power flicker + CRT scanline scroll + static ticker)
     private final Timer fxTimer;
     private int glitchTicker = 0;
+    private int bgFlickerAlpha = 20;
+    private int scanlineScroll = 0;
 
     // Responsive Buttons
     private JButton skipTransmissionBtn;
@@ -99,6 +103,7 @@ public class TutorialPanel extends JPanel {
         addAncestorListener(new AncestorListener() {
             @Override
             public void ancestorAdded(AncestorEvent event) {
+                stopHumAudio();
                 isVoiceoverActive = true;
                 currentManualPage = 0;
                 relayoutButtons();
@@ -108,15 +113,25 @@ public class TutorialPanel extends JPanel {
             @Override
             public void ancestorRemoved(AncestorEvent event) {
                 stopStoryAudio();
+                stopHumAudio();
             }
 
             @Override
             public void ancestorMoved(AncestorEvent event) {}
         });
 
-        // Animation loop for static/glitch & tracking audio end
+        // Animation loop for lab room power flicker, scanlines, & tracking voiceover end
         fxTimer = new Timer(60, e -> {
             glitchTicker++;
+            scanlineScroll = (scanlineScroll + 1) % 8;
+
+            // Simulate vintage laboratory fluorescent/power brownout ("on and off" pulse)
+            if (random.nextInt(10) == 0) {
+                bgFlickerAlpha = random.nextInt(75) + 45; // Brief deeper brownout dip
+            } else {
+                bgFlickerAlpha = random.nextInt(32) + 10; // Normal subtle hum flicker
+            }
+
             if (isVoiceoverActive && storyClip != null && !storyClip.isRunning() && storyClip.getMicrosecondPosition() > 0) {
                 finishTransmission();
             }
@@ -126,7 +141,11 @@ public class TutorialPanel extends JPanel {
     }
 
     private void loadLabImage() {
-        String[] paths = { "/images/splashscreen.png", "/images/splashscreen.jpg" };
+        String[] paths = {
+            "/images/splashscreen.png",
+            "/images/splashscreen.jpg",
+            "/images/menuscreen.png"
+        };
         for (String p : paths) {
             try (InputStream in = getClass().getResourceAsStream(p)) {
                 if (in != null) {
@@ -134,6 +153,20 @@ public class TutorialPanel extends JPanel {
                     if (backgroundImage != null) return;
                 }
             } catch (Exception ignored) {}
+        }
+
+        String[] folderPaths = {
+            "src/main/resources/images",
+            "bin/images"
+        };
+        for (String folder : folderPaths) {
+            File f = new File(folder, "splashscreen.png");
+            if (f.exists()) {
+                try {
+                    backgroundImage = ImageIO.read(f);
+                    if (backgroundImage != null) return;
+                } catch (Exception ignored) {}
+            }
         }
     }
 
@@ -154,20 +187,58 @@ public class TutorialPanel extends JPanel {
     }
 
     private void stopStoryAudio() {
-        if (storyClip != null && storyClip.isOpen()) {
-            storyClip.stop();
-            storyClip.close();
+        if (storyClip != null) {
+            try {
+                if (storyClip.isRunning()) {
+                    storyClip.stop();
+                }
+                if (storyClip.isOpen()) {
+                    storyClip.close();
+                }
+            } catch (Exception ignored) {}
+            storyClip = null;
+        }
+    }
+
+    private void startHumAudio() {
+        new Thread(() -> {
+            try {
+                stopHumAudio();
+                humClip = SoundManager.loadClip("/audio/electrichum.wav");
+                if (humClip != null) {
+                    humClip.loop(Clip.LOOP_CONTINUOUSLY);
+                    humClip.start();
+                }
+            } catch (Exception ignored) {}
+        }).start();
+    }
+
+    private void stopHumAudio() {
+        if (humClip != null) {
+            try {
+                if (humClip.isRunning()) {
+                    humClip.stop();
+                }
+                if (humClip.isOpen()) {
+                    humClip.close();
+                }
+            } catch (Exception ignored) {}
+            humClip = null;
         }
     }
 
     public void shutdown() {
         fxTimer.stop();
         stopStoryAudio();
+        stopHumAudio();
     }
 
     private void finishTransmission() {
         stopStoryAudio();
-        isVoiceoverActive = false;
+        if (isVoiceoverActive) {
+            isVoiceoverActive = false;
+            startHumAudio(); // Start looping electrichum.wav once inside the Facility Manual
+        }
         SwingUtilities.invokeLater(() -> {
             relayoutButtons();
             repaint();
@@ -207,7 +278,7 @@ public class TutorialPanel extends JPanel {
         backBtn = createRetroButton("<< [ RETURN TO CONSOLE ]", CHALK_AMBER, SwingConstants.LEFT);
         backBtn.addActionListener(e -> {
             stopStoryAudio();
-            SoundManager.playSound("/audio/flicker.wav", 100);
+            stopHumAudio();
             cardPanel.showScreen(CardPanel.MENU);
         });
         add(backBtn);
@@ -254,7 +325,7 @@ public class TutorialPanel extends JPanel {
         btn.setFont(new Font(Font.MONOSPACED, Font.BOLD, 14));
         btn.setForeground(baseColor);
         btn.setHorizontalAlignment(alignment);
-        btn.setMargin(new Insets(0, 0, 0, 0)); // Prevents '...' text clipping
+        btn.setMargin(new Insets(0, 0, 0, 0));
         btn.setOpaque(false);
         btn.setContentAreaFilled(false);
         btn.setBorderPainted(false);
@@ -302,12 +373,18 @@ public class TutorialPanel extends JPanel {
             g2.drawImage(backgroundImage, offsetX, offsetY, drawW, drawH, this);
         }
 
+        // 2. Laboratory Room "On and Off" Power Flicker Overlay
+        if (bgFlickerAlpha > 0) {
+            g2.setColor(new Color(0, 0, 0, Math.min(255, bgFlickerAlpha)));
+            g2.fillRect(0, 0, w, h);
+        }
+
         int frameX = 50;
         int frameY = 35;
         int frameW = w - 100;
         int frameH = h - 70;
 
-        // 2. High-contrast Slate Terminal Plate
+        // 3. High-contrast Slate Terminal Plate
         g2.setColor(SOLID_PLATE);
         g2.fillRect(frameX, frameY, frameW, frameH);
 
@@ -379,6 +456,14 @@ public class TutorialPanel extends JPanel {
     }
 
     private void renderCleanManualPage(Graphics2D g2, int fx, int fy, int fw, int fh) {
+        // Subtle animated CRT scanlines across the manual terminal
+        g2.setColor(new Color(0, 0, 0, 32));
+        for (int y = fy + 6; y < fy + fh - 6; y += 4) {
+            if ((y + scanlineScroll) % 8 == 0) {
+                g2.drawLine(fx + 6, y, fx + fw - 6, y);
+            }
+        }
+
         g2.setFont(new Font(Font.MONOSPACED, Font.BOLD, 12));
         g2.setColor(MUTED_GRAY);
         g2.drawString("FACILITY MANUAL // UP TACLOBAN AI CORE", fx + 30, fy + 32);
