@@ -1,6 +1,7 @@
 package com.howtotrainyourai.gui;
 
 import java.awt.*;
+import java.util.function.Consumer;
 import javax.swing.*;
 
 public class CardPanel extends JPanel {
@@ -16,6 +17,7 @@ public class CardPanel extends JPanel {
     public static final String TUTORIAL = "TUTORIAL";
 
     private final CardLayout cardLayout;
+    private Consumer<String> screenListener;
 
     public CardPanel() {
         cardLayout = new CardLayout();
@@ -26,7 +28,15 @@ public class CardPanel extends JPanel {
         add(panel, name);
     }
 
+    /** Called with the screen name every time a screen is shown (used to pick the music). */
+    public void setScreenListener(Consumer<String> listener) {
+        this.screenListener = listener;
+    }
+
     public void showScreen(String name) {
         cardLayout.show(this, name);
+        if (screenListener != null) {
+            screenListener.accept(name);
+        }
     }
 }

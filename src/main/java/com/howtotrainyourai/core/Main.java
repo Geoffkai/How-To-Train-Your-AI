@@ -35,11 +35,18 @@ public class Main {
             audioManager.loadGeneratedAudio();
             audioManager.setMusicVolume(0.35f);
             audioManager.setSfxVolume(0.35f);
-            audioManager.playMusic();
         } catch (Exception e) {
             System.err.println("game audio unavailable: " + e.getMessage());
             audioManager.close();
         }
+        // home track everywhere except the question screens (and the splash, which has its own hum)
+        cardPanel.setScreenListener(screen -> {
+            if (CardPanel.SPLASH.equals(screen)) {
+                return;
+            }
+            boolean questions = CardPanel.INTRO.equals(screen) || CardPanel.PLAY.equals(screen);
+            audioManager.playTrack(questions ? "/audio/QuestionBGM.wav" : "/audio/HomeScreen.wav");
+        });
         QuestionSpeechService speechService = new QuestionSpeechService();
 
         // Register all screens
