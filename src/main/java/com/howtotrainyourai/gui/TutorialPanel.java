@@ -80,7 +80,7 @@ public class TutorialPanel extends JPanel {
             {"", "SPACE"},
             {"CHOOSE YOUR SUPERVISION PROTOCOL:", "GOLD"},
             {"  STANDARD  : 3 Lifelines | Checkpoints at Q5 & Q10 | Secured token score", "BODY"},
-            {"  HIGH RISK : 2 Lifelines | Timer active | 2x Token multiplier | Secret Ending", "ALERT"},
+            {"  HIGH RISK : 2 Lifelines | Checkpoint at Q5 |Timer active | 2x Token multiplier ", "ALERT"},
             {"", "SPACE"},
             {"SINGLE-USE ANALOG RELAY LIFELINES:", "GREEN"},
             {"  * BINARY CHOICE : Shunts noisy relays; eliminates 2 wrong answers.", "BODY"},

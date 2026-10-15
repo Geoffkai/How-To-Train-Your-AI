@@ -39,9 +39,14 @@ public class Main {
             System.err.println("game audio unavailable: " + e.getMessage());
             audioManager.close();
         }
-        // home track everywhere except the question screens (and the splash, which has its own hum)
+
+        // Play BGM appropriately per screen; stop BGM on TUTORIAL so story.wav and electrichum.wav don't overlap
         cardPanel.setScreenListener(screen -> {
             if (CardPanel.SPLASH.equals(screen)) {
+                return;
+            }
+            if (CardPanel.TUTORIAL.equals(screen)) {
+                audioManager.stopMusic();
                 return;
             }
             boolean questions = CardPanel.INTRO.equals(screen) || CardPanel.PLAY.equals(screen);

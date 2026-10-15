@@ -103,8 +103,11 @@ public class AudioManager {
     }
 
     public synchronized void stopMusic() {
+        currentTrack = null;
         if (musicClip != null) {
             musicClip.stop();
+            musicClip.close();
+            musicClip = null;
         }
     }
 

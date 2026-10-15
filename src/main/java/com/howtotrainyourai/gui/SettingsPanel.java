@@ -13,7 +13,6 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Random;
 import javax.imageio.ImageIO;
-import javax.sound.sampled.Clip;
 import javax.swing.*;
 import javax.swing.event.AncestorEvent;
 import javax.swing.event.AncestorListener;
@@ -40,7 +39,6 @@ public class SettingsPanel extends JPanel {
     private final AudioManager audioManager;
     private final QuestionSpeechService speechService;
     private BufferedImage backgroundImage;
-    private Clip humClip;
     private final Random random = new Random();
 
     // Visual FX Timers (Lab room flicker + TV scanline sweep + Oscilloscope wave)
@@ -81,25 +79,22 @@ public class SettingsPanel extends JPanel {
         refreshRecords();
         buildUI();
 
-        // Automatically start/stop the electric hum when entering/leaving Settings
+        // Automatically refresh training records when entering Settings (HomeScreen.wav plays via AudioManager)
         addAncestorListener(new AncestorListener() {
             @Override
             public void ancestorAdded(AncestorEvent event) {
                 refreshRecords();
-                startHumAudio();
                 repaint();
             }
 
             @Override
-            public void ancestorRemoved(AncestorEvent event) {
-                stopHumAudio();
-            }
+            public void ancestorRemoved(AncestorEvent event) {}
 
             @Override
             public void ancestorMoved(AncestorEvent event) {}
         });
 
-        // Runs at ~15 FPS: delivers genuine CRT hum and vintage laboratory flickering
+        // Runs at ~15 FPS: delivers vintage laboratory flickering and oscilloscope animation
         fxTimer = new Timer(65, e -> {
             bgFlickerAlpha = random.nextInt(35) + 12;
             waveOffset = (waveOffset + 1) % 40;
@@ -107,33 +102,6 @@ public class SettingsPanel extends JPanel {
             repaint();
         });
         fxTimer.start();
-    }
-
-    private void startHumAudio() {
-        new Thread(() -> {
-            try {
-                stopHumAudio();
-                humClip = SoundManager.loadClip("/audio/electrichum.wav");
-                if (humClip != null) {
-                    humClip.loop(Clip.LOOP_CONTINUOUSLY);
-                    humClip.start();
-                }
-            } catch (Exception ignored) {}
-        }).start();
-    }
-
-    private void stopHumAudio() {
-        if (humClip != null) {
-            try {
-                if (humClip.isRunning()) {
-                    humClip.stop();
-                }
-                if (humClip.isOpen()) {
-                    humClip.close();
-                }
-            } catch (Exception ignored) {}
-            humClip = null;
-        }
     }
 
     private void loadLabImage() {
@@ -223,10 +191,7 @@ public class SettingsPanel extends JPanel {
         // ==========================================
         backBtn = createButton("<< [ BACK TO MAIN MENU ] >>");
         backBtn.setFont(MONO_FONT);
-        backBtn.addActionListener(e -> {
-            stopHumAudio();
-            cardPanel.showScreen(CardPanel.MENU);
-        });
+        backBtn.addActionListener(e -> cardPanel.showScreen(CardPanel.MENU));
 
         add(musicLabel); add(musicSlider); add(musicValue);
         add(sfxLabel); add(sfxSlider); add(sfxValue);
@@ -276,7 +241,7 @@ public class SettingsPanel extends JPanel {
                 g2.drawRoundRect(11, 11, w - 22, h - 22, 18, 18);
 
                 // CRT Header Banner
-                g2.setFont( new Font(Font.MONOSPACED, Font.BOLD, 19));
+                g2.setFont(new Font(Font.MONOSPACED, Font.BOLD, 19));
                 g2.setColor(CHALK_AMBER);
                 String header = "MAGNETIC TAPE ARCHIVE // RESTORATION BAY LOGS";
                 FontMetrics fm = g2.getFontMetrics();
@@ -507,7 +472,6 @@ public class SettingsPanel extends JPanel {
 
     public void shutdown() {
         fxTimer.stop();
-        stopHumAudio();
     }
 
     @Override
