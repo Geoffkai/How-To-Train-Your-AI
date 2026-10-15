@@ -55,11 +55,11 @@ public class EndingPanel extends JPanel {
 
         JPanel buttonRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
         buttonRow.setOpaque(false);
-        JButton retry = createButton("[ RETRY ]");
+        JButton retry = createDarkButton("[ RETRY ]");
         retry.addActionListener(e -> cardPanel.showScreen(CardPanel.SETUP));
-        JButton menu = createButton("[ BACK TO MENU ]");
+        JButton menu = createDarkButton("[ BACK TO MENU ]");
         menu.addActionListener(e -> cardPanel.showScreen(CardPanel.MENU));
-        JButton story = createButton("[ VIEW COMIC ]");
+        JButton story = createDarkButton("[ VIEW COMIC ]");
         story.addActionListener(e -> cardPanel.showScreen(CardPanel.ENDING_COMIC));
         buttonRow.add(retry);
         buttonRow.add(story);
@@ -129,16 +129,37 @@ public class EndingPanel extends JPanel {
                 .append("</div>");
     }
 
-    private JButton createButton(String text) {
+    static JButton createDarkButton(String text) {
         JButton button = new JButton(text);
         button.setFont(new Font(Font.MONOSPACED, Font.BOLD, 14));
         button.setForeground(CHALK);
         button.setBackground(new Color(0x28, 0x22, 0x18));
         button.setFocusPainted(false);
+        button.setOpaque(true);
+        button.setContentAreaFilled(true);
         button.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(GOLD), BorderFactory.createEmptyBorder(8, 12, 8, 12)));
+        button.getModel().addChangeListener(e -> {
+            ButtonModel model = button.getModel();
+            button.setBackground(model.isPressed() ? new Color(0x12, 0x0F, 0x0C)
+                    : model.isRollover() ? new Color(0x4A, 0x3A, 0x24) : new Color(0x28, 0x22, 0x18));
+        });
+        button.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override
+            public void focusGained(java.awt.event.FocusEvent e) {
+                button.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(CHALK, 2), BorderFactory.createEmptyBorder(7, 11, 7, 11)));
+            }
+
+            @Override
+            public void focusLost(java.awt.event.FocusEvent e) {
+                button.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(GOLD), BorderFactory.createEmptyBorder(8, 12, 8, 12)));
+            }
+        });
         return button;
     }
+
 }
 
 /** Displays the generated comic page that matches the completed session. */
@@ -167,12 +188,12 @@ final class EndingComicPanel extends JPanel {
 
         add(comic, BorderLayout.CENTER);
 
-        JButton menu = new JButton("RETURN TO DISPATCH");
+        JButton menu = EndingPanel.createDarkButton("RETURN TO DISPATCH");
         menu.setFont(new Font(Font.MONOSPACED, Font.BOLD, 15));
         menu.addActionListener(e -> cards.showScreen(CardPanel.MENU));
         JPanel footer = new JPanel();
         footer.setOpaque(false);
-        JButton details = new JButton("SESSION DETAILS");
+        JButton details = EndingPanel.createDarkButton("SESSION DETAILS");
         details.setFont(menu.getFont());
         details.addActionListener(e -> cards.showScreen(CardPanel.ENDING));
         footer.add(details);

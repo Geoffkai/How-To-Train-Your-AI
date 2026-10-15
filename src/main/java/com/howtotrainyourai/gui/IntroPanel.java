@@ -23,7 +23,7 @@ public final class IntroPanel extends JPanel implements GameScreen {
         setBackground(INK);
         setLayout(new BorderLayout(0, 10));
 
-        JButton continueButton = new JButton("CONTINUE TO RESTORATION");
+        JButton continueButton = EndingPanel.createDarkButton("CONTINUE TO RESTORATION");
         continueButton.setFont(new Font(Font.MONOSPACED, Font.BOLD, 15));
         continueButton.addActionListener(e -> beginRestoration());
         JPanel footer = new JPanel();
