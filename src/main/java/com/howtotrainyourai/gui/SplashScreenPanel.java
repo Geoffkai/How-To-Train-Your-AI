@@ -218,4 +218,5 @@ public class SplashScreenPanel extends JPanel {
 
         g2.dispose();
     }
+
 }

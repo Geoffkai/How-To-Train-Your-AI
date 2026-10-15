@@ -12,7 +12,7 @@ import javax.swing.*;
 /**
  * Collects the two things GameEngine.startSession() needs -- trainer name and
  * protocol -- then starts the session and hands the live engine to the question
- * screen.
+ * screen, after its intro interstitial.
  *
  * This is the GUI's equivalent of TerminalGameLoop's opening prompts. It's also
  * the only screen that builds an engine, which keeps session creation in one
@@ -262,8 +262,9 @@ public class SetupPanel extends JPanel {
             return;
         }
 
+        // IntroPanel stores the prepared engine and reveals the comic. It starts
+        // the actual question screen only after the operator continues.
         questionScreen.startGame(engine);
-        cardPanel.showScreen(CardPanel.PLAY);
     }
 
     private JButton createButton(String text) {
