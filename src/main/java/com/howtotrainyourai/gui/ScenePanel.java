@@ -89,8 +89,8 @@ public class ScenePanel extends JPanel implements GameScreen {
             "MEMORY", "UNDERSTANDING", "APPLICATION", "ANALYSIS", "EVALUATION", "SYNTHESIZE" };
 
     // lifelineButtons[i] <-> this enum, same order as the mockup's BINARY/PREDICT/
-    // OVERRIDE cells. OVERRIDE is display-only, same as PlayPanel.LIFELINE_ORDER --
-    // useLifeline(OVERRIDE) throws by design, the engine spends it on its own.
+    // OVERRIDE cells. OVERRIDE is spent by the engine; after that it becomes the
+    // manual RETRY control for the same question.
     private static final Lifeline[] LIFELINE_ORDER = {
             Lifeline.BINARY_CHOICE, Lifeline.PREDICT, Lifeline.OVERRIDE };
 
@@ -270,6 +270,7 @@ public class ScenePanel extends JPanel implements GameScreen {
     private int runningTotal;
     private int questionIndex;
     private boolean sessionOver;
+    private boolean overrideRetryPending;
     // brass clip that tracks progress on the ladder, see paintLadderMarker()
     private double markerPos;
     private double markerAnimStart;
@@ -337,9 +338,10 @@ public class ScenePanel extends JPanel implements GameScreen {
             TaperedButton button = new TaperedButton(lifelineLabels[i], FONT_LIFELINE, BRASS, PAPER);
             Lifeline lifeline = LIFELINE_ORDER[i];
             if (lifeline == Lifeline.OVERRIDE) {
-                // spent automatically on the first wrong answer, never clicked --
-                // same treatment as PlayPanel's "OV" button
+                // The engine spends Override automatically; this button is enabled
+                // only afterward so the player manually acknowledges the retry.
                 button.setEnabled(false);
+                button.addActionListener(e -> retryOverride());
             } else {
                 button.addActionListener(e -> {
                     playControlSound();
@@ -512,6 +514,7 @@ public class ScenePanel extends JPanel implements GameScreen {
         runningTotal = 0;
         this.questionIndex = 0;
         this.sessionOver = false;
+        this.overrideRetryPending = false;
         java.util.Arrays.fill(ladderOutcomes, null);
         paperLines.clear();
         paperGood.clear();
@@ -665,9 +668,29 @@ public class ScenePanel extends JPanel implements GameScreen {
         Set<Lifeline> remaining = engine.getRemainingLifelines();
         for (int i = 0; i < lifelineButtons.length; i++) {
             Lifeline lifeline = LIFELINE_ORDER[i];
-            boolean clickable = remaining.contains(lifeline) && !sessionOver && lifeline != Lifeline.OVERRIDE;
+            boolean clickable = lifeline == Lifeline.OVERRIDE ? overrideRetryPending
+                    : remaining.contains(lifeline) && !sessionOver;
             lifelineButtons[i].setEnabled(clickable);
         }
+    }
+
+    private void retryOverride() {
+        if (!overrideRetryPending || sessionOver) return;
+        playControlSound();
+        overrideRetryPending = false;
+        lifelineButtons[2].setText("OVERRIDE");
+        for (int i = 0; i < keyButtons.length; i++) {
+            keyButtons[i].setEnabled(!removedChoiceIds.contains(displayedQuestion.getChoices().get(i).getChoiceId()));
+            keyButtons[i].setBackground(BRASS_LIT);
+        }
+        selectedKeyIndex = -1;
+        waitingForAnswer = true;
+        monitorState = MonitorState.LISTENING;
+        scheduleIdle();
+        startCountdown();
+        refreshLifelines();
+        print("RETRY INPUT ACCEPTED");
+        repaint();
     }
 
     private void pullLifeline(Lifeline lifeline) {
@@ -762,17 +785,12 @@ public class ScenePanel extends JPanel implements GameScreen {
         TurnResult result = engine.submitAnswer(choiceId);
         runningTotal = result.getRunningTotal();
         if (result.isRetry()) {
-            // Override absorbed the miss. The engine keeps the same question and
-            // local ladder state; re-arm only the answer keys for the retry.
-            print("OVERRIDE ENGAGED: RETRY AUTHORIZED");
-            for (JButton keyButton : keyButtons) {
-                keyButton.setEnabled(true);
-                keyButton.setBackground(BRASS_LIT);
-            }
-            selectedKeyIndex = -1;
-            waitingForAnswer = true;
-            monitorState = MonitorState.LISTENING;
-            scheduleIdle();
+            // Override absorbed the miss. The engine keeps the same question;
+            // wait for the operator to press the Override control before retrying.
+            overrideRetryPending = true;
+            lifelineButtons[2].setText("RETRY");
+            lifelineButtons[2].setEnabled(true);
+            print("OVERRIDE ENGAGED // RETRY AVAILABLE");
             repaint();
             return;
         }
