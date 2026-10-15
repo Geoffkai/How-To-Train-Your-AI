@@ -67,7 +67,8 @@ public class ScenePanel extends JPanel implements GameScreen {
     // mockup .bay/.cell background (#0a0706/#141210/#1b211f/#0f1312 are all close
     // near-blacks in the mockup; one well color covers all of them here)
     private static final Color SHELF_WELL = Color.decode("#0a0706");
-    // mockup .lmark.failed / .lmark.latched literal colors (not css vars there either)
+    // mockup .lmark.failed / .lmark.latched literal colors (not css vars there
+    // either)
     private static final Color MARKER_FAIL = Color.decode("#c97a62");
     private static final Color MARKER_LATCH = Color.decode("#f4e6a8");
     private static final Color COLD_LIGHT = Color.decode("#cfeee2");
@@ -84,7 +85,8 @@ public class ScenePanel extends JPanel implements GameScreen {
         }
     }
 
-    // capability unlock order, matches GameEngineImpl.CAPABILITY_UNLOCKS (Q3/5/8/10/13/15)
+    // capability unlock order, matches GameEngineImpl.CAPABILITY_UNLOCKS
+    // (Q3/5/8/10/13/15)
     private static final String[] CAPABILITY_NAMES = {
             "MEMORY", "UNDERSTANDING", "APPLICATION", "ANALYSIS", "EVALUATION", "SYNTHESIZE" };
 
@@ -108,7 +110,9 @@ public class ScenePanel extends JPanel implements GameScreen {
     // face-led identity ported from PlayPanel.AiMonitorPanel, extended with the
     // mockup's state/blink/idle-bounce behavior rather than redesigned toward its
     // separate instrument-like look (see corpus "Fold pass - user decisions")
-    private enum MonitorState { LISTENING, HAPPY, ALERT, CLOSED, IDLE }
+    private enum MonitorState {
+        LISTENING, HAPPY, ALERT, CLOSED, IDLE
+    }
 
     private static final Font FONT_LADDER = new Font(Font.MONOSPACED, Font.BOLD, 11);
     private static final Font FONT_PROMPT = new Font(Font.MONOSPACED, Font.BOLD, 20);
@@ -117,7 +121,8 @@ public class ScenePanel extends JPanel implements GameScreen {
     private static final Font FONT_LIFELINE = new Font(Font.MONOSPACED, Font.BOLD, 8);
     private static final Font FONT_PAPER = new Font(Font.MONOSPACED, Font.PLAIN, 14);
 
-    // logical (1600x1000) layout rects, pulled from the mockup's percentage positions
+    // logical (1600x1000) layout rects, pulled from the mockup's percentage
+    // positions
     private static final double CEILING_H = 60;
     private static final double CAB_L_X = -16, CAB_L_Y = 190, CAB_L_W = 176, CAB_L_H = 520;
     private static final double CAB_R_X = 1456, CAB_R_Y = 250, CAB_R_W = 160, CAB_R_H = 440;
@@ -135,70 +140,98 @@ public class ScenePanel extends JPanel implements GameScreen {
     private static final double MONITOR_X = 1288, MONITOR_Y = 610, MONITOR_W = 272, MONITOR_H = 270;
     private static final double BACK_X = 20, BACK_Y = 20, BACK_W = 80, BACK_H = 30;
 
-    // desk container: left:-4%/right:-4%/bottom:-6%/height:34% of the 1600x1000 canvas
+    // desk container: left:-4%/right:-4%/bottom:-6%/height:34% of the 1600x1000
+    // canvas
     private static final double DESK_X = -64, DESK_Y = 720, DESK_W = 1728, DESK_H = 340;
     // keybank: left:31%/bottom:30% of the desk box (not 25%/40% -- that was the
     // superseded draft's position)
     private static final double KEYS_X = 472, KEYS_Y = 862, KEY_W = 115, KEY_H = 96, KEY_GAP = 21;
     private static final double KEY_DEPRESS = 10;
-    // next probe: left:68.2cqw/bottom:6.4cqw of the desk box -- moved into the answer
+    // next probe: left:68.2cqw/bottom:6.4cqw of the desk box -- moved into the
+    // answer
     // row per the handoff's physical-reach fix, lands in the same row as the keys
     private static final double NEXT_X = 1027, NEXT_Y = 862, NEXT_W = 144, NEXT_H = 96;
-    // decorative backing panel behind the keybank/next row: left:31.5cqw/bottom:5.3cqw
+    // decorative backing panel behind the keybank/next row:
+    // left:31.5cqw/bottom:5.3cqw
     // of the desk box, width 47.5cqw, height 8.2cqw
     private static final double DECK_X = 440, DECK_Y = 844, DECK_W = 760, DECK_H = 131;
-    // raised rear shelf backing strip, full desk width: top:-.4cqw/height:8cqw of the
+    // raised rear shelf backing strip, full desk width: top:-.4cqw/height:8cqw of
+    // the
     // desk box. it's two layers, not one solid block: a thin brass top lip
     // (.shelfbar .top, 1.6cqw) over a wood-dark facade (.shelfbar .facade) that
     // blends into the desk -- filling the whole strip brass left a stray block
     // showing above the operator log where the mockup shows nothing
     private static final double SHELFBAR_X = -64, SHELFBAR_Y = 714, SHELFBAR_W = 1728, SHELFBAR_H = 128;
     private static final double SHELFBAR_LIP_H = 26;
-    // the shelf platform itself: left:15cqw/top:-.4cqw/width:68cqw/height:8cqw of the desk box
+    // the shelf platform itself: left:15cqw/top:-.4cqw/width:68cqw/height:8cqw of
+    // the desk box
     private static final double SHELF_X = 176, SHELF_Y = 714, SHELF_W = 1088, SHELF_H = 128;
-    // lifeline bay module on the shelf: left:11.6cqw/top:1.75cqw/width:26.4cqw/height:6cqw of the shelf
+    // lifeline bay module on the shelf:
+    // left:11.6cqw/top:1.75cqw/width:26.4cqw/height:6cqw of the shelf
     private static final double BAY_X = 362, BAY_Y = 742, BAY_W = 422, BAY_H = 96;
-    // carrier plate inside the bay: left:.4cqw/top:.3cqw/width:22.8cqw/height:5.1cqw of the bay
+    // carrier plate inside the bay:
+    // left:.4cqw/top:.3cqw/width:22.8cqw/height:5.1cqw of the bay
     private static final double CARRIER_X = 368, CARRIER_Y = 747, CARRIER_W = 365, CARRIER_H = 82;
-    // the three lifeline cells inside the carrier, shared top:1.65cqw/height:3.3cqw;
+    // the three lifeline cells inside the carrier, shared
+    // top:1.65cqw/height:3.3cqw;
     // each cell's own left/width differs (bay module, not a uniform grid)
     private static final double LIFELINE_Y = 773, LIFELINE_H = 53;
     private static final double[] LIFELINE_X = { 382, 477, 590 }; // binary, predict, override
     private static final double[] LIFELINE_W = { 86, 106, 118 };
-    // teletype housing on the shelf: left:40.6cqw/top:2.6cqw/width:12cqw/height:5cqw of the shelf
+    // teletype housing on the shelf:
+    // left:40.6cqw/top:2.6cqw/width:12cqw/height:5cqw of the shelf
     private static final double TELETYPE_X = 826, TELETYPE_Y = 756, TELETYPE_W = 192, TELETYPE_H = 80;
     // the paper feed is a separate zone stacked above the housing (mockup's .paper:
     // bottom:calc(100% - .1cqw), max-height:9.5cqw), not an enlarged housing
     private static final double PAPER_H = 152;
-    // switch on the shelf: left:54.6cqw/top:2.3cqw/width:11cqw/height:5.4cqw of the shelf
+    // switch on the shelf: left:54.6cqw/top:2.3cqw/width:11cqw/height:5.4cqw of the
+    // shelf
     private static final double SWITCH_X = 1050, SWITCH_Y = 751, SWITCH_W = 176, SWITCH_H = 86;
-    // operator log + punch card, both direct children of the scene (not desk-nested):
-    // log left:-1%/bottom:-6%/width:12%/height:21%; card left:12.5%/bottom:-1%/width:12%,
+    // operator log + punch card, both direct children of the scene (not
+    // desk-nested):
+    // log left:-1%/bottom:-6%/width:12%/height:21%; card
+    // left:12.5%/bottom:-1%/width:12%,
     // aspect 738:325
     private static final double LOG_X = -16, LOG_Y = 850, LOG_W = 192, LOG_H = 210;
     private static final double CARD_X = 200, CARD_Y = 925, CARD_W = 192, CARD_H = 85;
-    // mockup rotate() transforms on elements NOT nested under .desk (so unrelated to
+    // mockup rotate() transforms on elements NOT nested under .desk (so unrelated
+    // to
     // the taper field below): .monitor 3deg, .log -6deg, .card 8deg
     private static final double MONITOR_ROTATE_DEG = 3, LOG_ROTATE_DEG = -6, CARD_ROTATE_DEG = 8;
 
-    // exact closed form for .desk's perspective(60cqw) rotateX(17deg) (java2d has no
-    // true 3d transform, so this reproduces it by formula instead). DESK_BOTTOM_Y is
-    // the CSS transform-origin:bottom pivot -- .desk's own box bottom (DESK_Y+DESK_H),
-    // which .desk{bottom:-6%} places below the visible 1000-tall canvas, not at y=1000.
-    // width(y) = DESK_BOTTOM_W / (1 + k*(DESK_BOTTOM_Y - y)), k = sin(rotateX)/perspective,
-    // both centered on x=800. Every desk-row shape/button interpolates against this same
+    // exact closed form for .desk's perspective(60cqw) rotateX(17deg) (java2d has
+    // no
+    // true 3d transform, so this reproduces it by formula instead). DESK_BOTTOM_Y
+    // is
+    // the CSS transform-origin:bottom pivot -- .desk's own box bottom
+    // (DESK_Y+DESK_H),
+    // which .desk{bottom:-6%} places below the visible 1000-tall canvas, not at
+    // y=1000.
+    // width(y) = DESK_BOTTOM_W / (1 + k*(DESK_BOTTOM_Y - y)), k =
+    // sin(rotateX)/perspective,
+    // both centered on x=800. Every desk-row shape/button interpolates against this
+    // same
     // field so the whole assembly tapers consistently, not just the background.
     //
-    // Derived from the live mockup's own computed transform matrix (getComputedStyle
-    // .desk .transform -> matrix3d(...), decoded: rotateX=17deg, perspective=0.6x the
-    // container width, exactly matching the CSS) and cross-checked against getBoundingClientRect
-    // corner geometry for the desk, a key, and the switch (all matched within ~1px).
-    // An earlier version of this file used a linear top/bottom width lerp that looked
-    // plausible but overstated the real taper by roughly 2.6x -- confirmed by this same
-    // live-DOM measurement after the lerp version was first reported as looking untapered,
-    // then as looking right, from screenshots that were too coarse to catch a few-pixel
+    // Derived from the live mockup's own computed transform matrix
+    // (getComputedStyle
+    // .desk .transform -> matrix3d(...), decoded: rotateX=17deg, perspective=0.6x
+    // the
+    // container width, exactly matching the CSS) and cross-checked against
+    // getBoundingClientRect
+    // corner geometry for the desk, a key, and the switch (all matched within
+    // ~1px).
+    // An earlier version of this file used a linear top/bottom width lerp that
+    // looked
+    // plausible but overstated the real taper by roughly 2.6x -- confirmed by this
+    // same
+    // live-DOM measurement after the lerp version was first reported as looking
+    // untapered,
+    // then as looking right, from screenshots that were too coarse to catch a
+    // few-pixel
     // shift either way. Don't re-derive this from a screenshot; re-derive it from
-    // getComputedStyle/getBoundingClientRect on the live mockup if it's ever in doubt again.
+    // getComputedStyle/getBoundingClientRect on the live mockup if it's ever in
+    // doubt again.
     private static final double DESK_TOP_Y = 720, DESK_BOTTOM_Y = DESK_Y + DESK_H;
     private static final double DESK_BOTTOM_W = 1728;
     private static final double DESK_CENTER_X = 800;
@@ -213,7 +246,8 @@ public class ScenePanel extends JPanel implements GameScreen {
     // an untapered desk-relative rect (x,y,w,h) -- as already computed from the
     // mockup's raw css percentages against the full DESK_X/DESK_W box -- to the 4
     // screen corners of the trapezoid it occupies once the desk's taper is applied.
-    // {topLeftX, topRightX, bottomLeftX, bottomRightX}; y's are unchanged (x+w, y+h).
+    // {topLeftX, topRightX, bottomLeftX, bottomRightX}; y's are unchanged (x+w,
+    // y+h).
     private double[] taperedQuad(double x, double y, double w, double h) {
         double leftFrac = (x - DESK_X) / DESK_W;
         double rightFrac = (x + w - DESK_X) / DESK_W;
@@ -283,11 +317,13 @@ public class ScenePanel extends JPanel implements GameScreen {
     // index of the key that was pressed to answer the current question, -1 if none
     private int selectedKeyIndex = -1;
     private final boolean[] lampsOn = new boolean[CAPABILITY_NAMES.length];
-    // capabilities actually restored this session -- unlike lampsOn, never cleared by
+    // capabilities actually restored this session -- unlike lampsOn, never cleared
+    // by
     // a High Risk failure or replayed by the win sequence
     private final boolean[] capabilitiesRestored = new boolean[CAPABILITY_NAMES.length];
     private EndingPanel endingPanel;
-    // set when the Training Records write failed; the result is still shown, just not as filed
+    // set when the Training Records write failed; the result is still shown, just
+    // not as filed
     private boolean recordWriteFailed;
 
     // ai vitals monitor state, see paintMonitor()/tickMonitor()
@@ -305,7 +341,8 @@ public class ScenePanel extends JPanel implements GameScreen {
     private Timer heartRateTimer;
     private Timer idleTimer;
     // the board only pulls a fresh question on showQuestion() (start / Next click),
-    // never mid-turn, so the just-answered prompt stays up until the player advances
+    // never mid-turn, so the just-answered prompt stays up until the player
+    // advances
     private Question displayedQuestion;
     private int displayedIndex;
     // chalk marks on the board: null/false until the displayed question is answered
@@ -314,7 +351,8 @@ public class ScenePanel extends JPanel implements GameScreen {
     private boolean displayedWasCorrect;
     // lifeline effects on the CURRENT question only -- cleared in showQuestion(),
     // same convention as PlayPanel.removedChoiceIds (each lifeline is spent once
-    // per session, but what it revealed only applies to the question it was used on)
+    // per session, but what it revealed only applies to the question it was used
+    // on)
     private final Set<String> removedChoiceIds = new HashSet<>();
     private String predictedChoiceId;
     private int predictedConfidence;
@@ -350,7 +388,10 @@ public class ScenePanel extends JPanel implements GameScreen {
             }
             lifelineButtons[i] = button;
             button.addMouseListener(new MouseAdapter() {
-                @Override public void mousePressed(MouseEvent e) { skipQuestionSweep(); }
+                @Override
+                public void mousePressed(MouseEvent e) {
+                    skipQuestionSweep();
+                }
             });
             add(button);
         }
@@ -364,7 +405,10 @@ public class ScenePanel extends JPanel implements GameScreen {
                 submitAnswerAt(position);
             });
             button.addMouseListener(new MouseAdapter() {
-                @Override public void mousePressed(MouseEvent e) { skipQuestionSweep(); }
+                @Override
+                public void mousePressed(MouseEvent e) {
+                    skipQuestionSweep();
+                }
             });
             keyButtons[i] = button;
             add(button);
@@ -373,7 +417,10 @@ public class ScenePanel extends JPanel implements GameScreen {
         nextButton = new TaperedButton("NEXT PROBE", FONT_LABEL, BRASS, PAPER);
         nextButton.setEnabled(false);
         nextButton.addMouseListener(new MouseAdapter() {
-            @Override public void mousePressed(MouseEvent e) { skipQuestionSweep(); }
+            @Override
+            public void mousePressed(MouseEvent e) {
+                skipQuestionSweep();
+            }
         });
         nextButton.addActionListener(e -> {
             playControlSound();
@@ -387,7 +434,10 @@ public class ScenePanel extends JPanel implements GameScreen {
 
         switchButton = new SwitchButton();
         switchButton.addMouseListener(new MouseAdapter() {
-            @Override public void mousePressed(MouseEvent e) { skipQuestionSweep(); }
+            @Override
+            public void mousePressed(MouseEvent e) {
+                skipQuestionSweep();
+            }
         });
         switchButton.addActionListener(e -> {
             playControlSound();
@@ -397,7 +447,10 @@ public class ScenePanel extends JPanel implements GameScreen {
 
         backButton = flatButton("Back", FONT_LABEL, BRASS, PAPER);
         backButton.addMouseListener(new MouseAdapter() {
-            @Override public void mousePressed(MouseEvent e) { skipQuestionSweep(); }
+            @Override
+            public void mousePressed(MouseEvent e) {
+                skipQuestionSweep();
+            }
         });
         backButton.addActionListener(e -> {
             playControlSound();
@@ -421,14 +474,16 @@ public class ScenePanel extends JPanel implements GameScreen {
             }
         });
         addMouseMotionListener(new MouseMotionAdapter() {
-            @Override public void mouseMoved(MouseEvent e) {
+            @Override
+            public void mouseMoved(MouseEvent e) {
                 parallaxX = (0.5 - e.getX() / (double) Math.max(1, getWidth())) * PARALLAX_MAX;
                 parallaxY = (0.5 - e.getY() / (double) Math.max(1, getHeight())) * PARALLAX_MAX;
                 repaint();
             }
         });
         addMouseListener(new MouseAdapter() {
-            @Override public void mouseExited(MouseEvent e) {
+            @Override
+            public void mouseExited(MouseEvent e) {
                 parallaxX = parallaxY = 0;
                 repaint();
             }
@@ -436,7 +491,8 @@ public class ScenePanel extends JPanel implements GameScreen {
 
         KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(e -> {
             if (e.getID() == KeyEvent.KEY_PRESSED && isShowing() && !e.isControlDown()
-                    && !e.isMetaDown() && !e.isAltDown()) skipQuestionSweep();
+                    && !e.isMetaDown() && !e.isAltDown())
+                skipQuestionSweep();
             return false;
         });
 
@@ -509,7 +565,8 @@ public class ScenePanel extends JPanel implements GameScreen {
     // starts rendering a session that's already been started on engine
     @Override
     public void startGame(GameEngine engine) {
-        if (speechService != null) speechService.cancel();
+        if (speechService != null)
+            speechService.cancel();
         this.engine = engine;
         runningTotal = 0;
         this.questionIndex = 0;
@@ -560,10 +617,12 @@ public class ScenePanel extends JPanel implements GameScreen {
     }
 
     private void showQuestion() {
-        if (questionSweepTimer != null) questionSweepTimer.stop();
+        if (questionSweepTimer != null)
+            questionSweepTimer.stop();
         questionSweepProgress = 0;
         displayedQuestion = engine.currentQuestion();
-        if (speechService != null) speechService.speak(displayedQuestion.getText());
+        if (speechService != null)
+            speechService.speak(displayedQuestion.getText());
         displayedIndex = questionIndex;
         removedChoiceIds.clear();
         predictedChoiceId = null;
@@ -587,16 +646,19 @@ public class ScenePanel extends JPanel implements GameScreen {
             questionSweepProgress = Math.min(1, (System.currentTimeMillis() - questionSweepStart)
                     / (double) QUESTION_SWEEP_MS);
             repaint();
-            if (questionSweepProgress >= 1) questionSweepTimer.stop();
+            if (questionSweepProgress >= 1)
+                questionSweepTimer.stop();
         });
         questionSweepTimer.start();
         relayout();
     }
 
     private void skipQuestionSweep() {
-        if (questionSweepProgress >= 1) return;
+        if (questionSweepProgress >= 1)
+            return;
         questionSweepProgress = 1;
-        if (questionSweepTimer != null) questionSweepTimer.stop();
+        if (questionSweepTimer != null)
+            questionSweepTimer.stop();
         repaint();
     }
 
@@ -627,7 +689,8 @@ public class ScenePanel extends JPanel implements GameScreen {
         countdownTimer.start();
     }
 
-    // Leaves the lab for the summary screen (or the menu if there is nothing to show).
+    // Leaves the lab for the summary screen (or the menu if there is nothing to
+    // show).
     // The win sequence is stopped first so its lamps and sounds don't keep playing
     // over the next screen.
     private void showEnding(SessionResult record) {
@@ -643,7 +706,8 @@ public class ScenePanel extends JPanel implements GameScreen {
     }
 
     private SessionResult finishSession() {
-        if (speechService != null) speechService.cancel();
+        if (speechService != null)
+            speechService.cancel();
         if (countdownTimer != null) {
             countdownTimer.stop();
         }
@@ -675,7 +739,8 @@ public class ScenePanel extends JPanel implements GameScreen {
     }
 
     private void retryOverride() {
-        if (!overrideRetryPending || sessionOver) return;
+        if (!overrideRetryPending || sessionOver)
+            return;
         playControlSound();
         overrideRetryPending = false;
         lifelineButtons[2].setText("OVERRIDE");
@@ -722,7 +787,9 @@ public class ScenePanel extends JPanel implements GameScreen {
         repaint();
     }
 
-    /** Display position of a choiceId in the currently displayed question, or -1. */
+    /**
+     * Display position of a choiceId in the currently displayed question, or -1.
+     */
     private int positionOfChoiceId(String choiceId) {
         List<Choice> choices = displayedQuestion.getChoices();
         for (int i = 0; i < choices.size(); i++) {
@@ -753,8 +820,9 @@ public class ScenePanel extends JPanel implements GameScreen {
         }
         monitorState = MonitorState.CLOSED;
         SessionResult record = finishSession();
-        print(recordWriteFailed || record == null ? "RECORD WRITE FAILED" :
-                "BUNDLE WRITTEN TO TAPE / " + record.getFinalScore() + " UNITS", !recordWriteFailed && record != null);
+        print(recordWriteFailed || record == null ? "RECORD WRITE FAILED"
+                : "BUNDLE WRITTEN TO TAPE / " + record.getFinalScore() + " UNITS",
+                !recordWriteFailed && record != null);
         print("LINK CLOSED");
         nextButton.setText("VIEW RESULT");
         nextButton.setEnabled(true);
@@ -763,10 +831,12 @@ public class ScenePanel extends JPanel implements GameScreen {
 
     // submits whatever choice is actually shown at this display position right now
     // -- never a fixed letter. QuestionSource shuffles choice order per question
-    // (CsvQuestionSource/CONTEXT.md 3), so the display position is not the choiceId;
+    // (CsvQuestionSource/CONTEXT.md 3), so the display position is not the
+    // choiceId;
     // same pattern PlayPanel.submitAnswerAt() already uses for the same reason.
     private void submitAnswerAt(int position) {
-        if (speechService != null) speechService.cancel();
+        if (speechService != null)
+            speechService.cancel();
         String choiceId = displayedQuestion.getChoices().get(position).getChoiceId();
         for (JButton keyButton : keyButtons) {
             keyButton.setEnabled(false);
@@ -815,7 +885,8 @@ public class ScenePanel extends JPanel implements GameScreen {
                     if (CAPABILITY_NAMES[lampIndex].equals(capability)) {
                         lampsOn[lampIndex] = true;
                         capabilitiesRestored[lampIndex] = true;
-                        if (!(result.isGameOver() && result.isCorrect())) playCeilingLightSound();
+                        if (!(result.isGameOver() && result.isCorrect()))
+                            playCeilingLightSound();
                     }
                 }
             }
@@ -864,17 +935,20 @@ public class ScenePanel extends JPanel implements GameScreen {
     }
 
     private void playControlSound() {
-        if (audioManager != null) audioManager.playSfx("control");
+        if (audioManager != null)
+            audioManager.playSfx("control");
     }
 
     private void playCeilingLightSound() {
-        if (audioManager != null) audioManager.playSfx("ceiling");
+        if (audioManager != null)
+            audioManager.playSfx("ceiling");
     }
 
     public void shutdown() {
         for (Timer timer : new Timer[] { paperFeedTimer, countdownTimer, endingTimer, questionSweepTimer,
                 markerAnimTimer, markerRollbackTimer, monitorTimer, heartRateTimer, idleTimer }) {
-            if (timer != null) timer.stop();
+            if (timer != null)
+                timer.stop();
         }
     }
 
@@ -939,7 +1013,8 @@ public class ScenePanel extends JPanel implements GameScreen {
         g2.translate(offsetX, offsetY);
         g2.scale(scale, scale);
 
-        // distant facility shifts subtly; foreground controls keep their hit targets fixed
+        // distant facility shifts subtly; foreground controls keep their hit targets
+        // fixed
         g2.translate(parallaxX, parallaxY);
         paintWall(g2);
         paintTexture(g2, new Rectangle(0, 0, (int) LOGICAL_W, (int) LOGICAL_H),
@@ -983,13 +1058,15 @@ public class ScenePanel extends JPanel implements GameScreen {
                 (int) (BOARD_W * questionSweepProgress), (int) BOARD_H);
         paintBoardContent(boardGraphics);
         boardGraphics.dispose();
-        if (questionSweepProgress < 1) paintQuestionArm(g2);
+        if (questionSweepProgress < 1)
+            paintQuestionArm(g2);
 
         g2.setColor(WOOD_DARK);
         g2.fillRect((int) LEDGE_X, (int) LEDGE_Y, (int) LEDGE_W, (int) LEDGE_H);
 
         // foreground: operator's desk, faked perspective since java2d has no true tilt.
-        // corners come from deskWidthAt() (see its comment), not hand-measured points --
+        // corners come from deskWidthAt() (see its comment), not hand-measured points
+        // --
         // the bottom pair sits at DESK_BOTTOM_Y (below the visible canvas by design),
         // clipped by the panel's own bounds same as the mockup's .desk bleed.
         double deskTopW = deskWidthAt(DESK_TOP_Y);
@@ -1016,7 +1093,8 @@ public class ScenePanel extends JPanel implements GameScreen {
         g2.setColor(BRASS);
         g2.fillPolygon(taperedPolygon(SHELFBAR_X, SHELFBAR_Y, SHELFBAR_W, SHELFBAR_LIP_H));
         g2.setColor(WOOD_DARK);
-        g2.fillPolygon(taperedPolygon(SHELFBAR_X, SHELFBAR_Y + SHELFBAR_LIP_H, SHELFBAR_W, SHELFBAR_H - SHELFBAR_LIP_H));
+        g2.fillPolygon(
+                taperedPolygon(SHELFBAR_X, SHELFBAR_Y + SHELFBAR_LIP_H, SHELFBAR_W, SHELFBAR_H - SHELFBAR_LIP_H));
         Polygon facade = taperedPolygon(SHELFBAR_X, SHELFBAR_Y + SHELFBAR_LIP_H,
                 SHELFBAR_W, SHELFBAR_H - SHELFBAR_LIP_H);
         paintTexture(g2, facade, SHELFBAR_X, SHELFBAR_Y + SHELFBAR_LIP_H,
@@ -1056,7 +1134,8 @@ public class ScenePanel extends JPanel implements GameScreen {
             g2m.setColor(BRASS);
             g2m.fillRoundRect((int) MONITOR_X, (int) MONITOR_Y, (int) MONITOR_W, (int) MONITOR_H, 24, 24);
             g2m.setColor(new Color(0x0e, 0x1d, 0x14));
-            g2m.fillRoundRect((int) MONITOR_X + 14, (int) MONITOR_Y + 14, (int) MONITOR_W - 28, (int) MONITOR_H - 28, 14, 14);
+            g2m.fillRoundRect((int) MONITOR_X + 14, (int) MONITOR_Y + 14, (int) MONITOR_W - 28, (int) MONITOR_H - 28,
+                    14, 14);
             paintMonitor(g2m);
         });
 
@@ -1091,7 +1170,8 @@ public class ScenePanel extends JPanel implements GameScreen {
 
     private void paintTexture(Graphics2D g2, Shape clip, double x, double y, double w, double h,
             float grainOpacity, float stainOpacity) {
-        if (GRAIN == null || STAIN == null) return;
+        if (GRAIN == null || STAIN == null)
+            return;
         int width = (int) Math.round(w), height = (int) Math.round(h);
         String key = width + "x" + height + ":" + grainOpacity + ":" + stainOpacity;
         BufferedImage overlay = TEXTURE_CACHE.computeIfAbsent(key,
@@ -1122,8 +1202,10 @@ public class ScenePanel extends JPanel implements GameScreen {
         g2.setColor(TILE);
         g2.fillRect(-8, -8, (int) LOGICAL_W + 16, (int) LOGICAL_H + 16);
         g2.setColor(new Color(57, 77, 72, 90));
-        for (int y = 62; y < LOGICAL_H; y += 62) g2.fillRect(0, y, (int) LOGICAL_W, 2);
-        for (int x = 94; x < LOGICAL_W; x += 94) g2.fillRect(x, 0, 2, (int) LOGICAL_H);
+        for (int y = 62; y < LOGICAL_H; y += 62)
+            g2.fillRect(0, y, (int) LOGICAL_W, 2);
+        for (int x = 94; x < LOGICAL_W; x += 94)
+            g2.fillRect(x, 0, 2, (int) LOGICAL_H);
         g2.setPaint(new RadialGradientPaint((float) LOGICAL_W / 2, (float) LOGICAL_H * 0.45f,
                 (float) LOGICAL_W * 0.58f, new float[] { 0.35f, 1 },
                 new Color[] { new Color(6, 9, 8, 0), new Color(6, 9, 8, 192) }));
@@ -1202,7 +1284,8 @@ public class ScenePanel extends JPanel implements GameScreen {
     }
 
     // (re)starts the 12s countdown to the idle dvd-bounce; only meaningful while
-    // waitingForAnswer, called again every time showQuestion()/wakeMonitor() applies
+    // waitingForAnswer, called again every time showQuestion()/wakeMonitor()
+    // applies
     private void scheduleIdle() {
         if (idleTimer != null) {
             idleTimer.stop();
@@ -1386,7 +1469,8 @@ public class ScenePanel extends JPanel implements GameScreen {
     }
 
     // brass clip that slides to the current rung, reddens on a failed rung, then
-    // slides back to the last secured checkpoint. ports restoration-bay-fold-claude-
+    // slides back to the last secured checkpoint. ports
+    // restoration-bay-fold-claude-
     // table.html's moveMarker()/lmark, not re-derived.
     private void paintLadderMarker(Graphics2D g2, double rungW) {
         double x = LADDER_X + markerPos * (rungW + LADDER_GAP);
@@ -1436,7 +1520,8 @@ public class ScenePanel extends JPanel implements GameScreen {
     }
 
     // highest checkpoint question (CONTEXT.md 2.2, Protocol.isCheckpoint) already
-    // passed before the failed rung, as a 0-based ladder index; 0 if none secured yet
+    // passed before the failed rung, as a 0-based ladder index; 0 if none secured
+    // yet
     private int lastSecuredRung(int failedRung) {
         int lastCheckpoint = 0;
         for (int questionNumber = 1; questionNumber <= failedRung; questionNumber++) {
@@ -1606,8 +1691,7 @@ public class ScenePanel extends JPanel implements GameScreen {
             List<String> wrapped = wrapText(metrics, paperLines.get(i), textWidth);
             double progress = Math.min(1, (now - paperLineTimes.get(i)) / (double) PAPER_FEED_MS);
             float alpha = (float) Math.max(0, progress);
-            g2.setColor(paperGood.get(i) == null ? PAPER_INK :
-                    paperGood.get(i) ? PAPER_GOOD : PAPER_BAD);
+            g2.setColor(paperGood.get(i) == null ? PAPER_INK : paperGood.get(i) ? PAPER_GOOD : PAPER_BAD);
             Composite oldComposite = g2.getComposite();
             g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
             for (int row = wrapped.size() - 1; row >= 0 && shown < maxVisible; row--, shown++) {
