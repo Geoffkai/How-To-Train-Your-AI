@@ -32,7 +32,7 @@ import java.util.List;
 public final class QuestionBankLoader {
 
     /** Default classpath location of the question bank. */
-    public static final String DEFAULT_RESOURCE_PATH = "/data/Question_Bank_PDL.csv";
+    public static final String DEFAULT_RESOURCE_PATH = "/MCQ/Question_Bank_PDL.csv";
 
     private static final int COLUMN_COUNT = 10;
 
@@ -49,7 +49,7 @@ public final class QuestionBankLoader {
      * Loads every question from the given classpath resource.
      *
      * @param resourcePath a classpath-relative path, e.g.
-     *                     "/data/Question_Bank_PDL.csv"
+     *                     "/MCQ/Question_Bank_PDL.csv"
      */
     public static List<Question> loadAll(String resourcePath) {
         try (InputStream in = QuestionBankLoader.class.getResourceAsStream(resourcePath)) {

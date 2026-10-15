@@ -17,6 +17,7 @@ public class AudioManager {
     private static final float SAMPLE_RATE = 22050f;
     private final Map<String, Clip> sfxClips = new HashMap<>();
     private Clip musicClip;
+    private String currentTrack;
 
     private float musicVolume = 1.0f; // 0..1, clamped
     private float sfxVolume = 1.0f;
@@ -41,7 +42,7 @@ public class AudioManager {
     }
 
     // just one music track at a time, loading a new one replaces whatever was there
-    public void loadMusic(AudioInputStream stream) throws LineUnavailableException, IOException {
+    public synchronized void loadMusic(AudioInputStream stream) throws LineUnavailableException, IOException {
         if (musicClip != null) {
             musicClip.close();
         }
@@ -51,13 +52,49 @@ public class AudioManager {
     }
 
     public void loadGeneratedAudio() throws LineUnavailableException, IOException {
-        loadMusic(pcmStream(generateAmbientPcm()));
         loadSfx("control", pcmStream(generateClickPcm()));
         loadSfx("ceiling", pcmStream(generateCeilingLightPcm()));
     }
 
+    // switches the looping background track to a classpath wav (e.g. "/audio/HomeScreen.wav").
+    // asking for the track that is already playing does nothing. The big wav is decoded on a
+    // background thread so a screen change never freezes the UI; a missing or unplayable file
+    // just leaves the game silent.
+    public void playTrack(String resourcePath) {
+        synchronized (this) {
+            if (resourcePath.equals(currentTrack)) {
+                return;
+            }
+            currentTrack = resourcePath;
+        }
+        Thread loader = new Thread(() -> {
+            try (AudioInputStream stream = AudioSystem.getAudioInputStream(
+                    new java.io.BufferedInputStream(AudioManager.class.getResourceAsStream(resourcePath)))) {
+                Clip clip = AudioSystem.getClip();
+                clip.open(stream);
+                synchronized (this) {
+                    if (!resourcePath.equals(currentTrack)) { // another screen asked since
+                        clip.close();
+                        return;
+                    }
+                    if (musicClip != null) {
+                        musicClip.stop();
+                        musicClip.close();
+                    }
+                    musicClip = clip;
+                    applyVolume(musicClip, musicVolume);
+                    playMusic();
+                }
+            } catch (Exception | LinkageError e) {
+                System.err.println("music unavailable (" + resourcePath + "): " + e);
+            }
+        }, "music-loader");
+        loader.setDaemon(true);
+        loader.start();
+    }
+
     // loops from the top until stopMusic(): used for the main menu / bg track
-    public void playMusic() {
+    public synchronized void playMusic() {
         if (musicClip == null) {
             return;
         }
@@ -65,13 +102,13 @@ public class AudioManager {
         musicClip.loop(Clip.LOOP_CONTINUOUSLY);
     }
 
-    public void stopMusic() {
+    public synchronized void stopMusic() {
         if (musicClip != null) {
             musicClip.stop();
         }
     }
 
-    public void setMusicVolume(float volume) {
+    public synchronized void setMusicVolume(float volume) {
         musicVolume = clamp(volume);
         if (musicClip != null) {
             applyVolume(musicClip, musicVolume);
@@ -93,7 +130,7 @@ public class AudioManager {
         return sfxVolume;
     }
 
-    public void close() {
+    public synchronized void close() {
         stopMusic();
         if (musicClip != null) musicClip.close();
         for (Clip clip : sfxClips.values()) clip.close();
